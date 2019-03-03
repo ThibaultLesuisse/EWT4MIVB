@@ -51,7 +51,6 @@ function collectData () {
             let collection = db.collection("MIVB");
             collection.insert(data, (error, result) => {
                 if(error)console.error("Error while inserting into the database")
-                console.log(result)
             })
         })
     })
