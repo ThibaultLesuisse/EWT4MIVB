@@ -16,6 +16,8 @@ services:
     image: mongo
     expose:
       - 27017
+    ports:
+      - 27017:27017
     volumes:
       - mongo_db:/data/db
 volumes:
