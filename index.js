@@ -7,9 +7,8 @@ const MongoClient = require('mongodb').MongoClient;
 const url = 'mongodb://mongo';
 const client = new MongoClient(url);
 
-collectData();
-// Collect data every 20 seconds
-//cron.schedule('*/20 * * * * *', collectData);
+//Collect data every 20 seconds
+cron.schedule('*/20 * * * * *', collectData); 
 
 
 
@@ -55,11 +54,6 @@ function collectData () {
                 console.log(result)
             })
         })
-        fs.writeFile(`files/${date.getTime() + ".json"}`, JSON.stringify(data) , function(err) {
-            if(err) {
-                return console.log(err);
-            }    
-        }); 
     })
 
 }).catch((e) => {
