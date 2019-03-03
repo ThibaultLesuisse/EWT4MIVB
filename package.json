@@ -4,8 +4,15 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
   },
   "author": "Thibault Lesuisse",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "bson-ext": "^2.0.1",
+    "dotenv": "^6.2.0",
+    "mongodb": "^3.1.13",
+    "node-cron": "^2.0.3"
+  }
 }
