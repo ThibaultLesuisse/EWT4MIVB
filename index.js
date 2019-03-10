@@ -1,16 +1,23 @@
 // load environment variables
 require('dotenv').config();
-const fs = require('fs');
-const https = require('https');
+-const https = require('https');
 const cron = require('node-cron');
 const MongoClient = require('mongodb').MongoClient;
-const url = 'mongodb://mongo';
-const client = new MongoClient(url);
+
 
 //Collect data every 20 seconds
 cron.schedule('*/20 * * * * *', collectData); 
 
-
+// Database credentials
+const user = encodeURIComponent(process.env.MONGO_USERNAME);
+const password = encodeURIComponent(process.env.MONGO_PASSWORD);
+const authMechanism = 'DEFAULT';
+const url = `mongodb://${user}:${password}@mongo/?authMechanism=${authMechanism}`;
+const client = new MongoClient(url);
+let db;
+client.connect((err) => {
+    db = client.db("MIVB");
+});
 
 let date = new Date();
 
@@ -46,15 +53,11 @@ function collectData () {
     }
     // Wait for all the promises to resolve
     Promise.all(promises).then( data => {
-        client.connect((err) => {
-            const db = client.db("MIVB");
             let collection = db.collection("MIVB");
             collection.insert(data, (error, result) => {
                 if(error)console.error("Error while inserting into the database")
             })
         })
-    })
-
 }).catch((e) => {
     console.error(e);
     //handle error

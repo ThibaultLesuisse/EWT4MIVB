@@ -20,5 +20,8 @@ services:
       - 27017:27017
     volumes:
       - mongo_db:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: thibault
+      MONGO_INITDB_ROOT_PASSWORD: m52nWY+8%*UTEGcb
 volumes:
   mongo_db:
