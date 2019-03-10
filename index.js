@@ -12,7 +12,7 @@ cron.schedule('*/20 * * * * *', collectData);
 const user = encodeURIComponent(process.env.MONGO_USERNAME);
 const password = encodeURIComponent(process.env.MONGO_PASSWORD);
 const authMechanism = 'DEFAULT';
-const url = `mongodb://${user}:${password}@mongo/?authMechanism=${authMechanism}`;
+const url = `mongodb://${user}:${password}@mongo/MIVB?authMechanism=${authMechanism}`;
 const client = new MongoClient(url);
 let db;
 client.connect((err) => {
