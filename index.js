@@ -54,7 +54,7 @@ function collectData () {
     // Wait for all the promises to resolve
     Promise.all(promises).then( data => {
             let collection = db.collection("MIVB");
-            collection.insert(data, (error, result) => {
+            collection.insertMany(data, (error, result) => {
                 if(error)console.error("Error while inserting into the database")
             })
         })
