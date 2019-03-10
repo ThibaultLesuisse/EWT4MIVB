@@ -23,5 +23,6 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: thibault
       MONGO_INITDB_ROOT_PASSWORD: kSWDmp5VP5xjFVf8b4XcDq
+      
 volumes:
   mongo_db:
