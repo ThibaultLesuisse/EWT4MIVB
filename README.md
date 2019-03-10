@@ -1,13 +1,14 @@
-# EWT4MIVB
+# :tram: EWT4MIVB :bus:
 This data collecting tool was created for the purpose of collecting data from the MIVB-STIB in Brussels and can be used by anyone wanting to be able to collect data from the MIVB-STIP. It uses docker and docker compose to manage the appliction runtime and the database used. This tools uses mongdb as its database.
 
 ## Installation
 
 To install this tool make sure to:
 
-1. install [Docker](https://docs.docker.com/install/) & [Docker Compose](https://docs.docker.com/compose/install/)  
-2. Register on [MIVB/STIB](https://opendata.stib-mivb.be/store/) and be sure to subscribe to the necessary API's
-3. Grab the API key and create an .env file from the .env.example file
+1. Install [Docker](https://docs.docker.com/install/) & [Docker Compose](https://docs.docker.com/compose/install/)
+2. Create a docker volume namend `mongo_db` to make sure the database doesn't get lost when restarting docker 
+3. Register on [MIVB/STIB](https://opendata.stib-mivb.be/store/) and be sure to subscribe to the necessary API's
+4. Grab the API key and create an .env file from the .env.example file
 
 ## Usage
 
