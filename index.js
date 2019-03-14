@@ -19,10 +19,6 @@ client.connect((err) => {
     db = client.db("MIVB");
 });
 
-let date = new Date();
-
-
-
 function collectData () {
     const APIKEY = process.env.MIVB_API_KEY;
     let options = {
@@ -75,7 +71,10 @@ function fetchData(url, options, timestamp) {
             });
             res.on('end', () => {
                 let parsed_position = JSON.parse(position);
-                if (timestamp) parsed_position["time"] = date.getTime();
+                if (timestamp) {
+                    let date = new Date();
+                    parsed_position["time"] = date.getTime();
+                }
                 resolve(parsed_position)
             })
 
