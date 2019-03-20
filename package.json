@@ -12,7 +12,9 @@
   "dependencies": {
     "bson-ext": "^2.0.1",
     "dotenv": "^6.2.0",
+    "gtfs": "^1.8.2",
     "mongodb": "^3.1.13",
+    "mongoose": "^5.4.19",
     "node-cron": "^2.0.3"
   }
 }

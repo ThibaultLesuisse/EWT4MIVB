@@ -62,3 +62,6 @@ typings/
 
 # files containing data
 files/
+
+# gtfs files
+gtfs/
