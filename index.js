@@ -53,6 +53,8 @@ function collectData () {
             collection.insertMany(data, (error, result) => {
                 if(error)console.error("Error while inserting into the database")
             })
+        }).catch( (err) => {
+            console.log("(Promise.all(): Failed to get results)");
         })
 }).catch((e) => {
     console.error(e);
