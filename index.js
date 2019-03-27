@@ -34,13 +34,11 @@ function collectData() {
 
     }
     fetchData("https://opendata-api.stib-mivb.be/NetworkDescription/1.0/PointByLine/39", options, false).then((stops) => {
-
         stops.lines.forEach(element => {
             element.points.forEach(id => {
                 line_ids.push(id.id)
             })
         });
-
         let lines_ids_request = "";
         let promises = [];
         for (let i = 0; i < line_ids.length; i++) {
@@ -67,7 +65,6 @@ function collectData() {
     });
 }
 
-
 function fetchData(url, options, timestamp) {
     return new Promise((resolve, reject) => {
         https.get(url, options, (res) => {
@@ -85,7 +82,8 @@ function fetchData(url, options, timestamp) {
                     }
                     resolve(parsed_position)
                 } catch (error) {
-                    console.error(error)   
+                    console.error(error);
+                    console.log(position);   
                 }
              
             })
