@@ -22,47 +22,50 @@ client.connect((err) => {
 //Global arrays
 let line_ids = []
 
-function collectData() {
-    const APIKEY = process.env.MIVB_API_KEY;
+async function collectData() {
     let options = {
         headers: {
             Accept: 'application/json',
-            Authorization: `Bearer ${APIKEY}`
+            Authorization: `Bearer ${process.env.MIVB_API_KEY}`
         }
     }
-    if (!Array.length > 0) {
-
-    }
-    fetchData("https://opendata-api.stib-mivb.be/NetworkDescription/1.0/PointByLine/39", options, false).then((stops) => {
-        stops.lines.forEach(element => {
-            element.points.forEach(id => {
-                line_ids.push(id.id)
-            })
-        });
+    try {
+        if (line_ids.length == 0) {
+            let stops = await fetchData("https://opendata-api.stib-mivb.be/NetworkDescription/1.0/PointByLine/39", options, false);
+            stops.lines.forEach(element => {
+                element.points.forEach(stop => {
+                    line_ids.push(stop.id)
+                })
+            });
+        }
         let lines_ids_request = "";
         let promises = [];
         for (let i = 0; i < line_ids.length; i++) {
             lines_ids_request = lines_ids_request.concat("," + line_ids[i]);
             if (i % 10 == 0) {
-                //remove first ,
+                //remove first ","
                 lines_ids_request = lines_ids_request.slice(1);
-                promises.push(fetchData(`https://opendata-api.stib-mivb.be/OperationMonitoring/3.0/PassingTimeByPoint/${encodeURIComponent(String(lines_ids_request))}`, options, true));
+                promises.push(fetchData(`https://opendata-api.stib-mivb.be/OperationMonitoring/4.0/PassingTimeByPoint/${encodeURIComponent(String(lines_ids_request))}`, options, true));
                 lines_ids_request = ""
             }
-        }
-        // Wait for all the promises to resolve
-        Promise.all(promises).then(data => {
-            let collection = db.collection("MIVB");
-            collection.insertMany(data, (error, result) => {
-                if (error) console.error("Error while inserting into the database")
+            // Wait for all the promises to resolve
+            Promise.all(promises).then(data => {
+                // For one reason the data from the MIVB contains _id properties which messes with the mongodb database. Therefore it is best the remove that property
+                data.forEach((result) => {
+                    delete result._id
+                })
+                let collection = db.collection("MIVB");
+                collection.insertMany(data, (error, result) => {
+                    if (error) console.error("Error while inserting into the database \n" + error)
+                })
+            }).catch((err) => {
+                console.log("(Promise.all(): Failed to get results)");
             })
-        }).catch((err) => {
-            console.log("(Promise.all(): Failed to get results)");
-        })
-    }).catch((e) => {
-        console.error(e);
-        //handle error
-    });
+        }
+    } catch (error) {
+        console.error(error);
+    }
+
 }
 
 function fetchData(url, options, timestamp) {
@@ -83,9 +86,8 @@ function fetchData(url, options, timestamp) {
                     resolve(parsed_position)
                 } catch (error) {
                     console.error(error);
-                    console.log(position);   
+                    console.log(position);
                 }
-             
             })
 
         }).on('error', (e) => {
