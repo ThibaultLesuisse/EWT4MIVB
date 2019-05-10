@@ -21,9 +21,11 @@ fs.readFile("./gtfs/trips.txt","utf8", (err, data) => {
         while(match != null){
             if(match[1] != null && trips.indexOf(match[1])!= -1){
                 //Here I need the second group from the regular expression which contains the times
+		//Also check to see if they belong to the same group
                 if(match[1] == old_match){
                     stoptimes[stoptimes.length - 1].timetable.push({ "arrival_time": match[2], "departure_time" : match[3], "stop_id" : match[4]});
-                }else {
+                }
+		else {
                     stoptimes.push({"trip": match[1], timetable: [{ "arrival_time": match[2], "departure_time" : match[3], "stop_id" : match[4]}]});
                 }
                 old_match = match[1];
