@@ -48,6 +48,7 @@ async function collectData() {
                 promises.push(fetchData(`https://opendata-api.stib-mivb.be/OperationMonitoring/4.0/PassingTimeByPoint/${encodeURIComponent(String(lines_ids_request))}`, options, true));
                 lines_ids_request = ""
             }
+        }
             // Wait for all the promises to resolve
             Promise.all(promises).then(data => {
                 // For one reason the data from the MIVB contains _id properties which messes with the mongodb database. Therefore it is best the remove that property
@@ -61,7 +62,7 @@ async function collectData() {
             }).catch((err) => {
                 console.log("(Promise.all(): Failed to get results)");
             })
-        }
+        
     } catch (error) {
         console.error(error);
     }
