@@ -16,35 +16,14 @@ client.connect((err) => {
     db = client.db("MIVB");
     // This array contains all the dates that will be anaylysed! Watch for the format. Make sure new Date() can read it
     let dates = [
-        "March 1",
-        "March 2",
-        "March 3",
-        "March 4",
-        "March 5",
-        "March 6",
-        "March 7",
-        "March 8",
-        "March 9",
-        "March 10",
-        "March 11",
-        "March 12",
-        "March 13",
-        "March 14",
-        "March 15",
-        "March 16",
-        "March 17",
-        "March 18",
-        "March 19",
-        "March 20",
-        "March 21",
-        "March 22",
-        "March 24",
-        "March 25",
-        "March 26",
-        "March 27",
-        "March 28",
-        "March 29",
-        "March 30",  
+        "May 2",
+        "May 3",
+        "May 6",
+        "May 7",
+        "May 8",
+        "May 9",
+        "May 10",
+        "May 12"
     ]
     a(dates);
 });
@@ -62,22 +41,18 @@ async function a(dates) {
                     trip.timetable.forEach(stop => {
                         promises.push(new Promise(async (resolve, reject) => {
                             //This contains the query
-                            let stop_data = await collection.find(
+                            await collection.find(
                                 {
                                     "points.pointId": stop.stop_id,
-                                    "points.passingTimes.lineId": "39",
-                                    $and: [{
+                                    "points.passingTimes.lineId": "39",                     
                                     time: {
-                                        $lt: new Date( date + ", 2019 " + stop.arrival_time + " UTC +01:00").getTime() + 1000
-                                    }
-                                }, {
-                                    time: {
+                                        $lt: new Date( date + ", 2019 " + stop.arrival_time + " UTC +01:00").getTime() + 1000,
                                         $gt: new Date(date + ", 2019 " + stop.arrival_time + " UTC +01:00").getTime() - 1000
-                                    }
-                                }]
+                                    }                       
                                 }).toArray((err, docs) => {
                                 if (err) reject(err)
                                 if (Array.isArray(docs) && docs.length > 0) {
+                                    console.log(docs)
                                     docs.forEach(element => {
                                         if(element.points[0].passingTimes.length > 0){EWT.push({
                                             stop_id: stop.stop_id,
@@ -109,15 +84,22 @@ async function a(dates) {
                             //This contains the average delay
                             if(!fs.existsSync('./ewt/delay.json')){
                                 let result = [];
-                                result.push({date: ((EWT/json.length)/1000)/60});
-                                fs.writeFile('./ewt/delay.json', JSON.stringify({
-                                    date: ((EWT/json.length)/1000)/60
-                                }))
+                                result.push({date: date,
+                                    delay: ((EWT/json.length)/1000)/60
+                                });
+                                fs.writeFile('./ewt/delay.json', JSON.stringify(result), err => {
+                                    if(err)console.log(err)
+                                })
                             }
                             else{
                                 fs.readFile('./ewt/delay.json', 'UTF-8', (err, data) => {
                                     if(err)console.log(error)
-                                    fs.writeFile('./ewt/delay.json', JSON.parse(data)[date] = ((EWT/json.length)/1000)/60);
+                                    result.push({date: date,
+                                        delay: ((EWT/json.length)/1000)/60
+                                    });
+                                    fs.writeFile('./ewt/delay.json',JSON.stringify(result), err => {
+                                        if(err)console.log(err)
+                                    });
                                 })
                             }
                             
