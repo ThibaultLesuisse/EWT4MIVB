@@ -32,11 +32,13 @@ async function collectData() {
     try {
         if (line_ids.length == 0) {
             let stops = await fetchData("https://opendata-api.stib-mivb.be/NetworkDescription/1.0/PointByLine/39", options, false);
+		if(stops.lines){
             stops.lines.forEach(element => {
                 element.points.forEach(stop => {
                     line_ids.push(stop.id)
-                })
-            });
+                		})
+            		});
+		}
         }
         let lines_ids_request = "";
         let promises = [];
