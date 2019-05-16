@@ -11,7 +11,9 @@
   "license": "ISC",
   "dependencies": {
     "bson-ext": "^2.0.1",
+    "cors": "^2.8.5",
     "dotenv": "^6.2.0",
+    "express": "^4.16.4",
     "gtfs": "^1.8.2",
     "mongodb": "^3.1.13",
     "mongoose": "^5.4.19",
