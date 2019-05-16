@@ -21,9 +21,11 @@ services:
       - 27017:27017
     volumes:
       - mongo_db:/data/db
+      - ./docker_files/mongodb/:/docker-entrypoint-initdb.d
     environment:
       - MONGO_INITDB_ROOT_USERNAME=thibault
       - MONGO_INITDB_ROOT_PASSWORD=kSWDmp5VP5xjFVf8b4XcDq
+      - MONGO_INITDB_DATABASE=MIVB
 
 volumes:
   mongo_db:

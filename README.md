@@ -6,7 +6,7 @@ This data collecting tool was created for the purpose of collecting data from th
 To install this tool make sure to:
 
 1. Install [Docker](https://docs.docker.com/install/) & [Docker Compose](https://docs.docker.com/compose/install/)
-2. Create a docker volume namend `mongo_db` to make sure the database doesn't get lost when restarting docker 
+2. Create a docker volume named `mongo_db` to make sure the database doesn't get lost when restarting docker 
 3. Register on [MIVB/STIB](https://opendata.stib-mivb.be/store/) and be sure to subscribe to the necessary API's
 4. Grab the API key and create an .env file from the .env.example file
 

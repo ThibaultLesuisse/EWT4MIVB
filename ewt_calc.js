@@ -23,7 +23,9 @@ client.connect((err) => {
         "May 8",
         "May 9",
         "May 10",
-        "May 12"
+        "May 13",
+        "May 14",
+        "May 15", 
     ]
     a(dates);
 });
@@ -46,8 +48,8 @@ async function a(dates) {
                                     "points.pointId": stop.stop_id,
                                     "points.passingTimes.lineId": "39",                     
                                     time: {
-                                        $lt: new Date( date + ", 2019 " + stop.arrival_time + " UTC +01:00").getTime() + 1000,
-                                        $gt: new Date(date + ", 2019 " + stop.arrival_time + " UTC +01:00").getTime() - 1000
+                                        $lt: new Date( date + ", 2019 " + stop.arrival_time + " UTC +01:00").getTime(),
+                                        $gt: new Date(date + ", 2019 " + stop.arrival_time + " UTC +01:00").getTime() - 60000
                                     }                       
                                 }).toArray((err, docs) => {
                                 if (err) reject(err)
@@ -94,6 +96,7 @@ async function a(dates) {
                             else{
                                 fs.readFile('./ewt/delay.json', 'UTF-8', (err, data) => {
                                     if(err)console.log(error)
+                                    let result = data;
                                     result.push({date: date,
                                         delay: ((EWT/json.length)/1000)/60
                                     });
