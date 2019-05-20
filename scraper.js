@@ -16,6 +16,7 @@ const url = `mongodb://${user}:${password}@mongo/MIVB?authMechanism=${authMechan
 const client = new MongoClient(url);
 let db;
 client.connect((err) => {
+    if(err)console.log(err)
     db = client.db("MIVB");
 });
 
@@ -59,16 +60,16 @@ async function collectData() {
                 })
                 let collection = db.collection("MIVB");
                 collection.insertMany(data, (error, result) => {
-                    if (error) console.error("Error while inserting into the database \n" + error)
+                    if (error) console.error("Error while inserting into the database \n" + error);
                 })
             }).catch((err) => {
                 console.log("(Promise.all(): Failed to get results)");
+                console.log(err.stack);
             })
         
     } catch (error) {
         console.error(error);
     }
-
 }
 
 function fetchData(url, options, timestamp) {
@@ -88,8 +89,7 @@ function fetchData(url, options, timestamp) {
                     }
                     resolve(parsed_position)
                 } catch (error) {
-                    console.error(error);
-                    console.log(position);
+                    reject(error);
                 }
             })
 

@@ -2,6 +2,7 @@ const fs = require('fs');
 const StreamZip = require('node-stream-zip');
 const https = require('https');
 const readline = require('readline');
+const array = require("./src/utils/array");
 
 require('dotenv').config();
 
@@ -68,9 +69,9 @@ function parse_gtfs() {
     let trips = [];
     let stoptimes = [];
     // REGEXS
-    const TRIPS_REGEX = /^(?:17),(\d{9}),(\d{18})/gm;
+    const TRIPS_REGEX = /^(?:17),(\d{9}),(\d{18}),(.+),(0|1)/gm;
     let data = fs.readFileSync("./tmp/gtfs/trips.txt", "utf8")
-        let parsed_calendar = parse_gtfsfile(fs.readFileSync('./tmp/gtfs/calendar.txt', 'utf8'));
+    let parsed_calendar = parse_gtfsfile(fs.readFileSync('./tmp/gtfs/calendar.txt', 'utf8'));
 
         match = TRIPS_REGEX.exec(data);
         while (match != null) {
@@ -81,7 +82,8 @@ function parse_gtfs() {
                         trips.push({
                             service_id: match[1],
                             trip_id: match[2],
-                            days: _days
+                            days: _days,
+                            direction_id: match[4]
                         });
                     }
                 }
@@ -105,37 +107,86 @@ function parse_gtfs() {
                let existing_trip = stoptimes.find(element => {
                     return element.trip == trip.trip_id
                 })
+                //On their server 0089 is 89 and as the values are saved as strings this can be a problem later on. Its ugly but it is the only
+                //stop of the MIVB that is formatted this way. A seperate function for only 1 possible is value is too much overhead.
+                if(parsed_stop_times[3] == "0089")parsed_stop_times[3] = "89"
                 if(existing_trip){
                     existing_trip.timetable.push({                       
                             "arrival_time": parsed_stop_times[1],
                             "departure_time": parsed_stop_times[2],
-                            "day_after_flag": true,
-                            "stop_id": parsed_stop_times[3],  
+                            "stop_id": parsed_stop_times[3],
+                            "stop_sequence": parsed_stop_times[4]  
                     })
                 }else {
                     stoptimes.push({
                         "trip": trip.trip_id,
+                        direction_id: trip.direction_id,
                         days: trip.days,
                         service_id: trip.service_id,
                         timetable: [{
                             "arrival_time": parsed_stop_times[1],
                             "departure_time": parsed_stop_times[2],
-                            "day_after_flag": true,
                             "stop_id": parsed_stop_times[3],
+                            "stop_sequence": parsed_stop_times[4]  
                         }]
                     });
-                }
-               
+                }  
             }
-
         });
         rl.on('close', () => {
+            estimate_ewt(stoptimes).then( () => console.log("Done estimating EWT, written result to file"));
             fs.writeFile("./files/39.json", JSON.stringify(stoptimes), (err) => {
                 if (err) console.log("Error while writing resulting json file.");
                 console.log("Done, the EWT calculator can be started!")
             })
         })
     
+}
+/*
+* This function will try and measure the EWT on a line using the GTFS files. If you are reading this it is prone to errors... The gtfs files contain 
+*  Weirdness. If you want an example check the lasts trips on a line on a sunday. 
+*/
+function estimate_ewt(stoptimes){
+    return new Promise((resolve, reject) => {
+            //This needs to be sorted... otherwise it is useless
+            stoptimes.sort((a,b) => {
+                if(new Date(a.timetable[0].arrival_time + " May 2, 2019").getTime() > new Date(b.timetable[0].arrival_time + " May 2, 2019").getTime()){
+                    return 1
+                }else {
+                    return -1
+                }
+            });
+            // We need to calculate the time bewteen two trams. We need to be sure that are headed in the same direction and starting from the same point
+            // and working on the same days. As the array is sorted this should be the closest match but it's dangerous to assume that....
+            let _values = [];
+            stoptimes.forEach(a => {
+                let _value = stoptimes.map(b => {
+                    if( array(a.days, b.days) &&
+                        a.timetable[0].stop_id == b.timetable[0].stop_id &&
+                        a.direction_id == b.direction_id && 
+                        a != b &&
+                        new Date(b.timetable[0].arrival_time + " May 2, 2019").getTime() > new Date(a.timetable[0].arrival_time + " May 2, 2019").getTime()
+                        ){
+                            let c = new Date(b.timetable[0].arrival_time + " May 2, 2019").getTime() - new Date(a.timetable[0].arrival_time + " May 2, 2019").getTime();
+                            if(c && typeof c === "number") return c
+                        }
+                })
+                _value.sort((a,b) => {
+                    if(a < b){
+                        return -1
+                    }
+                    else{
+                        return 1
+                    }
+                })
+                if(_value[0])_values.push(_value[0]);
+            });
+            let total = _values.reduce((accumulator, number) => accumulator + number, 0);
+            fs.writeFile("./files/39_ewt.json", JSON.stringify({ewt: ((total/60000)/_values.length)}), (err) => {
+                if(err)console.log("error writing file");
+                resolve();
+            })
+    })
 }
 
 function check_zip_or_fetch() {
@@ -153,6 +204,7 @@ function check_zip_or_fetch() {
     }
     return new Promise((resolve, reject) => {
         fs.exists('./tmp/gtfs.zip', (bool) => {
+            // -k on their example curl call shows that they selfsigned their certificate. 
             process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = 0;
             if (!bool) {
                 //create writestream to write zipfile on disk
