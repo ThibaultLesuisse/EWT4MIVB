@@ -17,11 +17,12 @@ app.get("/delay", (req, res) =>  {
 })
 
 app.get("/ewt", (req, res) => {
+    console.log("i Ran")
     fs.readFile('./files/39_ewt.json', 'utf-8', (err, ewt_data) => {
         res.send(JSON.parse(ewt_data));
     })
 })
 
-app.listen(3001, () => {
- console.log("Server running on port 3001");
+app.listen(8080, () => {
+ console.log("Server running on port 8080");
 });
