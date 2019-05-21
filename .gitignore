@@ -60,13 +60,10 @@ typings/
 # next.js build output
 .next
 
-# files containing data
-files/
-
 # gtfs files
 gtfs/
 
 # Files
-files/delay
+files/delay/
 ewt/
 tmp/
