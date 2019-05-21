@@ -180,18 +180,18 @@ async function run(dates) {
                         console.log("Writing file complete");
                         let dailey_delay = EWT.reduce(a, b => a + b.delay);
                         //This contains the average delay
-                        if (!fs.existsSync('./files/delay/delay.json')) {
+                        if (!fs.existsSync('./files/result/delay.json')) {
                             let result = [];
                             result.push({
                                 date: date,
                                 ewt: new BigNumber(ewt).dividedBy(EWT.length).dividedBy(1000).dividedBy(60).toFixed(2),
                                 delay: new BigNumber(dailey_delay).dividedBy(EWT.length).dividedBy(1000).dividedBy(60).toFixed(2)
                             });
-                            fs.writeFile('./files/delay/delay.json', JSON.stringify(result), err => {
+                            fs.writeFile('./files/result/delay.json', JSON.stringify(result), err => {
                                 if (err) console.log(err)
                             })
                         } else {
-                            fs.readFile('./files/delay/delay.json', 'UTF-8', (err, data) => {
+                            fs.readFile('./files/result/delay.json', 'UTF-8', (err, data) => {
                                 if (err) console.log(error)
                                 let result = JSON.parse(data);
                                 result.push({
@@ -199,7 +199,7 @@ async function run(dates) {
                                     ewt: new BigNumber(ewt).dividedBy(EWT.length).dividedBy(1000).dividedBy(60).toFixed(2),
                                     delay: new BigNumber(dailey_delay).dividedBy(EWT.length).dividedBy(1000).dividedBy(60).toFixed(2)
                                 });
-                                fs.writeFile('./files/delay/delay.json', JSON.stringify(result), err => {
+                                fs.writeFile('./files/result/delay.json', JSON.stringify(result), err => {
                                     if (err) console.log(err)
                                 });
                             })

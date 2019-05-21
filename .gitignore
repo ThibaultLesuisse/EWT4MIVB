@@ -67,6 +67,6 @@ files/
 gtfs/
 
 # Files
-files/
+files/delay
 ewt/
 tmp/

@@ -14,7 +14,7 @@ app.get('/', (req, res)  => {
 
 
 app.get("/delay", (req, res) =>  {
-    fs.readFile('./ewt/delay.json', (err, data) => {
+    fs.readFile('./files/result/delay.json', (err, data) => {
         if(err)res.send({
             error: 1,
             error_text: "couldn't find the delay.json file"
@@ -26,7 +26,7 @@ app.get("/delay", (req, res) =>  {
 
 app.get("/ewt", (req, res) => {
     console.log("i Ran")
-    fs.readFile('./files/39_ewt.json', 'utf-8', (err, ewt_data) => {
+    fs.readFile('./files/result/39_ewt.json', 'utf-8', (err, ewt_data) => {
         res.send(JSON.parse(ewt_data));
     })
 })
