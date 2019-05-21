@@ -28,7 +28,7 @@ services:
       - MONGO_INITDB_DATABASE=MIVB
   nodejs:
     image: nodejs
-    container_name: nodejs
+    container_name: node:alpine
     restart: unless-stopped
     working_dir: /app
     environment: 
