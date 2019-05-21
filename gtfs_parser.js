@@ -69,7 +69,7 @@ function parse_gtfs() {
     let trips = [];
     let stoptimes = [];
     // REGEXS
-    const TRIPS_REGEX = /^(?:17),(\d{9}),(\d{18}),(.+),(0|1)/gm;
+    const TRIPS_REGEX = /^(?:17),(\d{9}),(\d{18}),([A-Za-z0-9\-]+),(0|1)/gm;
     let data = fs.readFileSync("./tmp/gtfs/trips.txt", "utf8")
     let parsed_calendar = parse_gtfsfile(fs.readFileSync('./tmp/gtfs/calendar.txt', 'utf8'));
 
@@ -83,6 +83,7 @@ function parse_gtfs() {
                             service_id: match[1],
                             trip_id: match[2],
                             days: _days,
+                            direction: match[3],
                             direction_id: match[4]
                         });
                     }
@@ -109,7 +110,15 @@ function parse_gtfs() {
                 })
                 //On their server 0089 is 89 and as the values are saved as strings this can be a problem later on. Its ugly but it is the only
                 //stop of the MIVB that is formatted this way. A seperate function for only 1 possible is value is too much overhead.
-                if(parsed_stop_times[3] == "0089")parsed_stop_times[3] = "89"
+                if(parsed_stop_times[3] == "0089"){
+                    parsed_stop_times[3] = "89"
+                }
+                //Cleaning up the mess made by MIVB. In the GTFS files they have stop ID that end with F and G but not in their real-time data. So we need to get
+                //rid of the F and the G
+                if(parsed_stop_times[3].length = 5){
+                    parsed_stop_times[3] = parsed_stop_times[3].slice(0, 4);
+                }
+                
                 if(existing_trip){
                     existing_trip.timetable.push({                       
                             "arrival_time": parsed_stop_times[1],
@@ -121,6 +130,7 @@ function parse_gtfs() {
                     stoptimes.push({
                         "trip": trip.trip_id,
                         direction_id: trip.direction_id,
+                        direction: trip.direction,
                         days: trip.days,
                         service_id: trip.service_id,
                         timetable: [{
@@ -168,11 +178,11 @@ function estimate_ewt(stoptimes){
                         new Date(b.timetable[0].arrival_time + " May 2, 2019").getTime() > new Date(a.timetable[0].arrival_time + " May 2, 2019").getTime()
                         ){
                             let c = new Date(b.timetable[0].arrival_time + " May 2, 2019").getTime() - new Date(a.timetable[0].arrival_time + " May 2, 2019").getTime();
-                            if(c && typeof c === "number") return c
+                            if(c && typeof c === "number") return { days: b.days, swt: c}
                         }
                 })
                 _value.sort((a,b) => {
-                    if(a < b){
+                    if(a.swt < b.swt){
                         return -1
                     }
                     else{
@@ -182,7 +192,7 @@ function estimate_ewt(stoptimes){
                 if(_value[0])_values.push(_value[0]);
             });
             let total = _values.reduce((accumulator, number) => accumulator + number, 0);
-            fs.writeFile("./files/39_ewt.json", JSON.stringify({ewt: ((total/60000)/_values.length)}), (err) => {
+            fs.writeFile("./files/result/39_ewt.json", JSON.stringify({ewt: ((total/60000)/_values.length)}), (err) => {
                 if(err)console.log("error writing file");
                 resolve();
             })

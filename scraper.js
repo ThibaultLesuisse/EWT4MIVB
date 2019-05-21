@@ -3,6 +3,7 @@ require('dotenv').config();
 const https = require('https');
 const cron = require('node-cron');
 const MongoClient = require('mongodb').MongoClient;
+const fs = require('fs');
 
 
 //Collect data every 20 seconds
@@ -62,6 +63,7 @@ async function collectData() {
                 collection.insertMany(data, (error, result) => {
                     if (error) console.error("Error while inserting into the database \n" + error);
                 })
+                fs.writeFile('./tmp.json', JSON.stringify(data), () => {console.log("loo")});
             }).catch((err) => {
                 console.log("(Promise.all(): Failed to get results)");
                 console.log(err.stack);
@@ -74,6 +76,7 @@ async function collectData() {
 
 function fetchData(url, options, timestamp) {
     return new Promise((resolve, reject) => {
+        console.log(url);
         https.get(url, options, (res) => {
             let position = "";
 
