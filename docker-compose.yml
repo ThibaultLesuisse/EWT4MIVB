@@ -27,8 +27,8 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=kSWDmp5VP5xjFVf8b4XcDq
       - MONGO_INITDB_DATABASE=MIVB
   nodejs:
-    image: nodejs
-    container_name: node:alpine
+    image: node:alpine
+    container_name: nodejs
     restart: unless-stopped
     working_dir: /app
     environment: 
