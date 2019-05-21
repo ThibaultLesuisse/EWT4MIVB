@@ -11,7 +11,7 @@ services:
       NODE_ENV: development
     ports:
       - 3000:3000
-    command: npm start
+    command: npm run scraper
   mongo:
     image: mongo
     restart: always
@@ -26,6 +26,34 @@ services:
       - MONGO_INITDB_ROOT_USERNAME=thibault
       - MONGO_INITDB_ROOT_PASSWORD=kSWDmp5VP5xjFVf8b4XcDq
       - MONGO_INITDB_DATABASE=MIVB
+  nodejs:
+    image: nodejs
+    container_name: nodejs
+    restart: unless-stopped
+    working_dir: /app
+    environment: 
+      NODE_ENV: production
+    networks:
+      - app-network
+    volumes:
+      - ./:/app
+    command: npm run webserver
+  webserver:
+    image: nginx
+    container_name: webserver
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker_files/nginx/:/etc/nginx/conf.d
+    depends_on:
+      - nodejs
+    networks:
+      - app-network
 
 volumes:
   mongo_db:
+
+networks:
+  app-network:
+    driver: bridge

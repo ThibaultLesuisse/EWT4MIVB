@@ -5,11 +5,13 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node scraper.js"
+    "scraper": "node scraper.js",
+    "webserver": "node index.js"
   },
   "author": "Thibault Lesuisse",
   "license": "ISC",
   "dependencies": {
+    "bignumber.js": "^8.1.1",
     "bson-ext": "^2.0.1",
     "cors": "^2.8.5",
     "dotenv": "^6.2.0",
