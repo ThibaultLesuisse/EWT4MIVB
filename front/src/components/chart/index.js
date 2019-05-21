@@ -18,7 +18,7 @@ class Chart extends React.Component {
     }
   }
   componentDidMount() {
-    fetch('http://localhost:3001/delay')
+    fetch('http://174.138.107.45/delay')
       .then(response => response.json())
       .then(delay => {
         let _data_delay = [];
@@ -31,7 +31,7 @@ class Chart extends React.Component {
         this.setState({
           labels: _labels,
         });
-        fetch('http://localhost:3001/ewt')
+        fetch('http://174.138.107.45/ewt')
           .then(response => response.json())
           .then(ewt => {
             let _data = [];
