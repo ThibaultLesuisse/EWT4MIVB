@@ -25,12 +25,13 @@ class Chart extends React.Component {
         let _labels = [];
         delay.sort(this.compare_data);
         delay.forEach(element => {
+          this.setState({
+            labels: _labels,
+          });
           _data_delay.push(element.delay/2)
           _labels.push(element.date)
         });
-        this.setState({
-          labels: _labels,
-        });
+        
         fetch('http://174.138.107.45/ewt')
           .then(response => response.json())
           .then(ewt => {
@@ -38,14 +39,17 @@ class Chart extends React.Component {
             delay.forEach( () => {
               _data.push((ewt.ewt/2))
             });
+            let final_excess = _data_delay.map(a => {
+              return  (_data[0]) - (parseFloat(a)/2)
+            })
             let final_data_delay = _data_delay.map(a => {
-              console.log(`a is : ${typeof a} ewt is: ${typeof _data[0]}`)
-              return parseFloat(a) + (_data[0])
+              return (parseFloat(a)/2) + (_data[0])
             })
             this.setState({
               ewt: _data,
               data: final_data_delay,
-              chart_ready: true
+              chart_ready: true,
+              excess: final_excess
             })
           })
           .catch(err => console.log(err))
@@ -58,11 +62,11 @@ class Chart extends React.Component {
     const data = {
       labels: this.state.labels,
       datasets: [{
-          label: 'Estimated Waiting Time line 39',
+          label: 'Average Waiting Time line 39',
           fill: false,
           lineTension: 0.1,
-          backgroundColor: 'rgba(214, 69, 65, 0.4)',
-          borderColor: 'rgba(214, 69, 65, 1)',
+          backgroundColor: 'rgba(155, 89, 182,0.4)',
+          borderColor: 'rgba(155, 89, 182,1.0)',
           borderCapStyle: 'butt',
           borderDash: [],
           borderDashOffset: 0.0,
@@ -79,7 +83,7 @@ class Chart extends React.Component {
           data: this.state.data
         },
         {
-          label: 'Average Waiting Time for line 39',
+          label: 'Scheduled Waiting Time for line 39',
           fill: false,
           lineTension: 0.1,
           backgroundColor: 'rgba(75,192,192,0.4)',
@@ -98,16 +102,31 @@ class Chart extends React.Component {
           pointRadius: 1,
           pointHitRadius: 10,
           data: this.state.ewt
+        },
+        {
+          label: 'Excess Waiting Time for line 39',
+          fill: false,
+          lineTension: 0.1,
+          backgroundColor: 'rgba(192, 57, 43,0.4)',
+          borderColor: 'rgba(192, 57, 43,1.0)',
+          borderCapStyle: 'butt',
+          borderDash: [],
+          borderDashOffset: 0.0,
+          borderJoinStyle: 'miter',
+          pointBorderColor: 'rgba(75,192,192,1)',
+          pointBackgroundColor: '#fff',
+          pointBorderWidth: 1,
+          pointHoverRadius: 5,
+          pointHoverBackgroundColor: 'rgba(75,192,192,1)',
+          pointHoverBorderColor: 'rgba(220,220,220,1)',
+          pointHoverBorderWidth: 2,
+          pointRadius: 1,
+          pointHitRadius: 10,
+          data: this.state.excess
         }
       ]
     };
-    if(this.state.chart_ready) {return <div width = {500} marginWidth={"25%"} ><Line data = {data} width = {400} height = {400} options = { {maintainAspectRatio: false , scales: {
-      yAxes: [{
-          ticks: {
-              beginAtZero: true
-          }
-      }]
-  }}}/>
+    if(this.state.chart_ready) {return <div width = {500} ><Line data = {data} width = {400} height = {400} options = { {maintainAspectRatio: false }}/>
   </div >}
   else     return ( <div width = {500}>
           Chart is Loading
