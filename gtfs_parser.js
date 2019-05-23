@@ -21,25 +21,31 @@ module.exports = {
 }
 
 function unzip() {
-    if (fs.readdir('./tmp/gtfs', (err, files) => files.length > 0 ? true : false)) {
-        const zip = new StreamZip({
-            file: './tmp/gtfs.zip',
-            storeEntries: true
-        });
-        // Handle errors
-        zip.on('error', err => {
-            console.log(err)
-        });
-        zip.on('ready', () => {
-            zip.extract(null, './tmp/gtfs/', (err, count) => {
-                console.log(err ? 'Extract error' : `Extracted ${count} entries`);
-                console.log("Zipfile has been extracted")
-                zip.close();
+    return new Promise((resolve, reject) => {
+        if (fs.readdir('./tmp/gtfs', (err, files) => files.length > 0 ? true : false)) {
+            const zip = new StreamZip({
+                file: './tmp/gtfs.zip',
+                storeEntries: true
             });
-        });
-    } else {
-        console.log("The gtfs files already seem to be extracted, if not delete everything in the '/tmp/gtfs' directory");
-    }
+            // Handle errors
+            zip.on('error', err => {
+                reject(err)
+                console.log(err)
+            });
+            zip.on('ready', () => {
+                zip.extract(null, './tmp/gtfs/', (err, count) => {
+                    console.log(err ? 'Extract error' : `Extracted ${count} entries`);
+                    console.log("Zipfile has been extracted")
+                    zip.close();
+                    resolve();
+                });
+            });
+        } else {
+            console.log("The gtfs files already seem to be extracted, if not delete everything in the '/tmp/gtfs' directory");
+            resolve();
+        }
+    })
+
 }
 //GTFS-files are easy to parse, no need for difficult parser
 function parse_gtfsfile(data) {
@@ -66,12 +72,13 @@ function days(slice) {
 }
 
 function parse_gtfs() {
-    let trips = [];
-    let stoptimes = [];
-    // REGEXS
-    const TRIPS_REGEX = /^(?:17),(\d{9}),(\d{18}),([A-Za-z0-9\-]+),(0|1)/gm;
-    let data = fs.readFileSync("./tmp/gtfs/trips.txt", "utf8")
-    let parsed_calendar = parse_gtfsfile(fs.readFileSync('./tmp/gtfs/calendar.txt', 'utf8'));
+    return new Promise((resolve, reject) => {
+        let trips = [];
+        let stoptimes = [];
+        // REGEXS
+        const TRIPS_REGEX = /^(?:17),(\d{9}),(\d{18}),("[A-Za-z0-9\-()]+"),(0|1)/gm;
+        let data = fs.readFileSync("./tmp/gtfs/trips.txt", "utf8")
+        let parsed_calendar = parse_gtfsfile(fs.readFileSync('./tmp/gtfs/calendar.txt', 'utf8'));
 
         match = TRIPS_REGEX.exec(data);
         while (match != null) {
@@ -91,7 +98,7 @@ function parse_gtfs() {
             }
             match = TRIPS_REGEX.exec(data);
         }
-        //To make sure the memory footprint is as small as possible we only take one file in memory. The other is read line by line.
+        //To make sure the memory footprint is as small as possible we only take two file in memory. The other is read line by line.
         //Let's hope the GC does it's magic 
         const rl = readline.createInterface({
             input: fs.createReadStream('./tmp/gtfs/stop_times.txt'),
@@ -105,28 +112,28 @@ function parse_gtfs() {
             });
             //We also should take into account the date, gtfs are only valid for a certain amount of time
             if (trip) {
-               let existing_trip = stoptimes.find(element => {
+                let existing_trip = stoptimes.find(element => {
                     return element.trip == trip.trip_id
                 })
                 //On their server 0089 is 89 and as the values are saved as strings this can be a problem later on. Its ugly but it is the only
                 //stop of the MIVB that is formatted this way. A seperate function for only 1 possible is value is too much overhead.
-                if(parsed_stop_times[3] == "0089"){
+                if (parsed_stop_times[3] == "0089") {
                     parsed_stop_times[3] = "89"
                 }
                 //Cleaning up the mess made by MIVB. In the GTFS files they have stop ID that end with F and G but not in their real-time data. So we need to get
                 //rid of the F and the G
-                if(parsed_stop_times[3].length = 5){
+                if (parsed_stop_times[3].length = 5) {
                     parsed_stop_times[3] = parsed_stop_times[3].slice(0, 4);
                 }
-                
-                if(existing_trip){
-                    existing_trip.timetable.push({                       
-                            "arrival_time": parsed_stop_times[1],
-                            "departure_time": parsed_stop_times[2],
-                            "stop_id": parsed_stop_times[3],
-                            "stop_sequence": parsed_stop_times[4]  
+
+                if (existing_trip) {
+                    existing_trip.timetable.push({
+                        "arrival_time": parsed_stop_times[1],
+                        "departure_time": parsed_stop_times[2],
+                        "stop_id": parsed_stop_times[3],
+                        "stop_sequence": parsed_stop_times[4]
                     })
-                }else {
+                } else {
                     stoptimes.push({
                         "trip": trip.trip_id,
                         direction_id: trip.direction_id,
@@ -137,65 +144,76 @@ function parse_gtfs() {
                             "arrival_time": parsed_stop_times[1],
                             "departure_time": parsed_stop_times[2],
                             "stop_id": parsed_stop_times[3],
-                            "stop_sequence": parsed_stop_times[4]  
+                            "stop_sequence": parsed_stop_times[4]
                         }]
                     });
-                }  
+                }
             }
         });
-        rl.on('close', () => {
-            estimate_ewt(stoptimes).then( () => console.log("Done estimating EWT, written result to file"));
+        rl.on('close', async () => {
+            await estimate_ewt(stoptimes).then(() => console.log("Done estimating EWT, written result to file"));
             fs.writeFile("./files/39.json", JSON.stringify(stoptimes), (err) => {
                 if (err) console.log("Error while writing resulting json file.");
-                console.log("Done, the EWT calculator can be started!")
-            })
-        })
-    
-}
-/*
-* This function will try and measure the EWT on a line using the GTFS files. If you are reading this it is prone to errors... The gtfs files contain 
-*  Weirdness. If you want an example check the lasts trips on a line on a sunday. 
-*/
-function estimate_ewt(stoptimes){
-    return new Promise((resolve, reject) => {
-            //This needs to be sorted... otherwise it is useless
-            stoptimes.sort((a,b) => {
-                if(new Date(a.timetable[0].arrival_time + " May 2, 2019").getTime() > new Date(b.timetable[0].arrival_time + " May 2, 2019").getTime()){
-                    return 1
-                }else {
-                    return -1
-                }
-            });
-            // We need to calculate the time bewteen two trams. We need to be sure that are headed in the same direction and starting from the same point
-            // and working on the same days. As the array is sorted this should be the closest match but it's dangerous to assume that....
-            let _values = [];
-            stoptimes.forEach(a => {
-                let _value = stoptimes.map(b => {
-                    if( array(a.days, b.days) &&
-                        a.timetable[0].stop_id == b.timetable[0].stop_id &&
-                        a.direction_id == b.direction_id && 
-                        a != b &&
-                        new Date(b.timetable[0].arrival_time + " May 2, 2019").getTime() > new Date(a.timetable[0].arrival_time + " May 2, 2019").getTime()
-                        ){
-                            let c = new Date(b.timetable[0].arrival_time + " May 2, 2019").getTime() - new Date(a.timetable[0].arrival_time + " May 2, 2019").getTime();
-                            if(c && typeof c === "number") return { days: b.days, swt: c}
-                        }
-                })
-                _value.sort((a,b) => {
-                    if(a.swt < b.swt){
-                        return -1
-                    }
-                    else{
-                        return 1
-                    }
-                })
-                if(_value[0])_values.push(_value[0]);
-            });
-            let total = _values.reduce((accumulator, number) => accumulator + number, 0);
-            fs.writeFile("./files/result/39_ewt.json", JSON.stringify({ewt: ((total/60000)/_values.length)}), (err) => {
-                if(err)console.log("error writing file");
+                console.log("Done, the EWT calculator can be started!");
                 resolve();
             })
+        })
+    })
+}
+/*
+ * This function will try and measure the EWT on a line using the GTFS files. If you are reading this it is prone to errors... The gtfs files contain 
+ *  Weirdness. If you want an example check the lasts trips on a line on a sunday. 
+ */
+function estimate_ewt(stoptimes) {
+    return new Promise((resolve, reject) => {
+        //This needs to be sorted... otherwise it is useless
+        stoptimes.sort((a, b) => {
+            if (new Date(a.timetable[0].arrival_time + " May 2, 2019").getTime() > new Date(b.timetable[0].arrival_time + " May 2, 2019").getTime()) {
+                return 1
+            } else {
+                return -1
+            }
+        });
+        // We need to calculate the time bewteen two trams. We need to be sure that are headed in the same direction and starting from the same point
+        // and working on the same days. As the array is sorted this should be the closest match but it's dangerous to assume that....
+        let _values = [];
+        stoptimes.forEach(a => {
+            let _value = stoptimes.map(b => {
+                if (array(a.days, b.days) &&
+                    a.timetable[0].stop_id == b.timetable[0].stop_id &&
+                    a.direction_id == b.direction_id &&
+                    a != b &&
+                    new Date(b.timetable[0].arrival_time + " May 2, 2019").getTime() > new Date(a.timetable[0].arrival_time + " May 2, 2019").getTime()
+                ) {
+                    let c = new Date(b.timetable[0].arrival_time + " May 2, 2019").getTime() - new Date(a.timetable[0].arrival_time + " May 2, 2019").getTime();
+                    if (c && typeof c === "number") return {
+                        days: b.days,
+                        swt: c
+                    }
+                }
+            })
+            _value.sort((a, b) => {
+                if (a.swt < b.swt) {
+                    return -1
+                } else {
+                    return 1
+                }
+            })
+            if (_value[0]) _values.push(_value[0]);
+        });
+        let weekdays = [];
+        let saturdays = [];
+        let sundays = [];
+        _values.forEach(_value => {
+            
+        })
+        let total = _values.reduce((accumulator, number) => accumulator + number.ewt, 0);
+        fs.writeFile("./files/result/39_ewt.json", JSON.stringify({
+            ewt: ((total / 60000) / _values.length)
+        }), (err) => {
+            if (err) console.log("error writing file");
+            resolve();
+        })
     })
 }
 
