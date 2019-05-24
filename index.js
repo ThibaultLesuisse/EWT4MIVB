@@ -25,7 +25,6 @@ app.get("/delay", (req, res) =>  {
 })
 
 app.get("/ewt", (req, res) => {
-    console.log("i Ran")
     fs.readFile('./files/result/39_ewt.json', 'utf-8', (err, ewt_data) => {
         res.send(JSON.parse(ewt_data));
     })

@@ -17,50 +17,60 @@ class Chart extends React.Component {
       return -1
     }
   }
-  componentDidMount() {
-    fetch('http://174.138.107.45/delay')
-      .then(response => response.json())
-      .then(delay => {
-        let _data_delay = [];
-        let _labels = [];
-        delay.sort(this.compare_data);
-        delay.forEach(element => {
-          this.setState({
-            labels: _labels,
-          });
-          _data_delay.push(element.delay/2)
-          _labels.push(element.date)
-        });
-        
-        fetch('http://174.138.107.45/ewt')
-          .then(response => response.json())
-          .then(ewt => {
-            let _data = [];
-            delay.forEach( () => {
-              _data.push((ewt.ewt/2))
-            });
-            let final_excess = _data_delay.map(a => {
-              return  (_data[0]) - (parseFloat(a)/2)
-            })
-            let final_data_delay = _data_delay.map(a => {
-              return (parseFloat(a)/2) + (_data[0])
-            })
-            this.setState({
-              ewt: _data,
-              data: final_data_delay,
-              chart_ready: true,
-              excess: final_excess
-            })
-          })
-          .catch(err => console.log(err))
+  //174.138.107.45
+  async componentDidMount() {
+    try {
+      let delay_response = await fetch('http://localhost:8080/delay');
+      let delay = await  delay_response.json();
+      let swt_response = await fetch('http://localhost:8080/ewt');
+      let swt_parsed = await swt_response.json();
+      let _data = [];
+      delay.sort(this.compare_data);    
+      delay.forEach( (_delay) => {
+              switch (new Date(_delay.date + ", 2019").getDay()) {
+                case 0:
+                      _data.push({
+                        day: _delay.date,
+                        swt: (swt_parsed.ewt_saturdays)/2,
+                        delay: _delay.delay
+                      })
+                    break;
+                case 6: 
+                      _data.push({
+                        day: _delay.date,
+                        swt: (swt_parsed.ewt_sundays)/2,
+                        delay: _delay.delay
+                      })
+                  break;
+                default:
+                      _data.push({
+                        day: _delay.date,
+                        swt: (swt_parsed.ewt_weekdays)/2,
+                        delay: _delay.delay
+                      })
+                    break;
+                }
+              });
+      let days = _data.map( a => a.day)
+      let swt = _data.map( a => a.swt)
+      let awt = _data.map( a => { return a.swt + parseFloat(a.delay)});
+      let ewt = _data.map( a => parseFloat(a.delay))
+      this.setState({
+                swt : swt,
+                awt : awt,
+                ewt: ewt,
+                days: days,
+                chart_ready: true
       })
-      .catch(err => console.log(err))
-
+      console.log(JSON.stringify(this.state, null, 2))
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   render() {
     const data = {
-      labels: this.state.labels,
+      labels: this.state.days,
       datasets: [{
           label: 'Average Waiting Time line 39',
           fill: false,
@@ -80,7 +90,7 @@ class Chart extends React.Component {
           pointHoverBorderWidth: 2,
           pointRadius: 1,
           pointHitRadius: 10,
-          data: this.state.data
+          data: this.state.awt
         },
         {
           label: 'Scheduled Waiting Time for line 39',
@@ -101,7 +111,7 @@ class Chart extends React.Component {
           pointHoverBorderWidth: 2,
           pointRadius: 1,
           pointHitRadius: 10,
-          data: this.state.ewt
+          data: this.state.swt
         },
         {
           label: 'Excess Waiting Time for line 39',
@@ -122,7 +132,7 @@ class Chart extends React.Component {
           pointHoverBorderWidth: 2,
           pointRadius: 1,
           pointHitRadius: 10,
-          data: this.state.excess
+          data: this.state.ewt
         }
       ]
     };
