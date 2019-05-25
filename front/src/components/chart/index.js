@@ -20,9 +20,9 @@ class Chart extends React.Component {
   //174.138.107.45
   async componentDidMount() {
     try {
-      let delay_response = await fetch('http://localhost:8080/delay');
+      let delay_response = await fetch('http://174.138.107.45:8080/delay');
       let delay = await  delay_response.json();
-      let swt_response = await fetch('http://localhost:8080/ewt');
+      let swt_response = await fetch('http://174.138.107.45:8080/ewt');
       let swt_parsed = await swt_response.json();
       let _data = [];
       delay.sort(this.compare_data);    
