@@ -64,7 +64,6 @@ async function collectData() {
                     if (error) console.error("Error while inserting into the database \n" + error)
 			
                 })
-                fs.writeFile('./tmp.json', JSON.stringify(data), () => {console.log("loo")});
             }).catch((err) => {
                 console.log("(Promise.all(): Failed to get results)");
                 console.log(err.stack);
@@ -77,7 +76,6 @@ async function collectData() {
 
 function fetchData(url, options, timestamp) {
     return new Promise((resolve, reject) => {
-        console.log(url);
         https.get(url, options, (res) => {
             let position = "";
 
