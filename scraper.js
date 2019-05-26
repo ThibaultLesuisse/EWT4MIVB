@@ -61,7 +61,8 @@ async function collectData() {
                 })
                 let collection = db.collection("MIVB");
                 collection.insertMany(data, (error, result) => {
-                    if (error) console.error("Error while inserting into the database \n" + error);
+                    if (error) console.error("Error while inserting into the database \n" + error)
+			
                 })
             }).catch((err) => {
                 console.log("(Promise.all(): Failed to get results)");
