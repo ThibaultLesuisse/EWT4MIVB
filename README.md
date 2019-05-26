@@ -20,19 +20,23 @@ This project consists of 4 parts:
 
 ### Scraper
 
-Once everything is installed run `docker-compose up -d` (if you want to attach the stdout and stderr to the terminal remove the -d, -d stands for detach) and everything should be running. Note that this tool uses node-cron as cron manager so don't add to the crontab, it should manage fine. In case more monitoring and failureproofing is needed [pm2](http://pm2.keymetrics.io/) could be considered. Docker will run the scraper file and save the output to a mongodb database. For security reasons a user will be added to the database an example can be found in the `docker-compose.yml` file and the file `docker_files/mongodb/users.js` **if you expose your database change the passwords or use a decent firewall** . More information about adding user and their passwords can be found on the [mongo-website]. If I can find the time i will automate it. Also important for performance is to create indexes on the time fields in the database. This will speed up querying by a lot!
+Once everything is installed run `docker-compose up -d` (if you want to attach the stdout and stderr to the terminal remove the -d, -d stands for detach) and everything should be running. Note that this tool uses node-cron as cron manager so don't add to the crontab, it should manage fine. In case more monitoring and failureproofing is needed [pm2](http://pm2.keymetrics.io/) could be considered. Docker will run the scraper file and save the output to a mongodb database. For security reasons a user will be added to the database an example can be found in the `docker-compose.yml` file and the file `docker_files/mongodb/users.js` **if you expose your database change the passwords or use a decent firewall! The passwords for the database are public, change them immediately** . More information about adding user and their passwords can be found on the [mongo-website]. If I can find the time i will automate it. Also important for performance is to create indexes on the time fields in the database. This will speed up querying by a lot!
 
 ### GTFS Parser
 
-GTFS contains a few quirks (for example if a certain line runs until after midnight it will count up the hours, finding 27:00 is thus not uncommon). To extract the relevant data for I created a GTFS-parser. It can be found in the gtfs_parser.js file. It uses regular expressions to extract the necessary data. 
+GTFS contains a few quirks (for example if a certain line runs until after midnight it will count up the hours, finding 27:00 is thus not uncommon). To extract the relevant data for I created a GTFS-parser. It can be found in the gtfs_parser.js file. It uses regular expressions to extract the necessary data. Athough another parsing method is as good if not better `Array.split(',')` as the file is comma delimited.  
 
 
 ### Delay calculator
 
 Once the GTFS parser is done and has written the needed files we can start measuring the delay. This will be done by querying the database and comparing it with the GTFS-files. Basically it will look up a certain arrival time (for those wondering arrival and departure time are the same!!) in the database. For example if the GTFS files say a tram/bus/metro should arrive at 10:00 we will look at 9:59 if there is one coming in 1 minute. If not the tram/bus/metro is delayed. There is one big but though. The data from the MIVB-STIB does not contain a trip_id! This makes very difficult, actually impossible, to know for sure if the tram we are looking in the GTFS files is the right one. Second big issue is that if two trams/buses/metros are close together they show up in the data as one. Therefor the calculations should be take for granted! No accurate conclusion is therefor possible from this data. !!
 
+### Automation
+
+Node-Cron is used to run the tool every day at 12:00. The entrypoint is found at `src/start.js` and make sure that the tool has the right permissions to run and create files+folders (a tmp folder will be created as termporary folder). The `cleaner.js` will also delete all database records older than 2 days!
+
+
 ### Front-end
 
-To display the data in a orderly fashion.
-//TODO
+To display the data in a orderly fashion a react application can be found at `/front`. This can be started locally be running `npm start`.
 
