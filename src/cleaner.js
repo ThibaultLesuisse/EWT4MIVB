@@ -2,12 +2,14 @@ var path = require("path");
 const rimraf = require('rimraf');
 const MongoClient = require('mongodb').MongoClient;
 
+
 // Database credentials
 const user = encodeURIComponent(process.env.MONGO_USERNAME);
 const password = encodeURIComponent(process.env.MONGO_PASSWORD);
 const authMechanism = 'DEFAULT';
 //The default poolSize is only 5, we need way more connections.... Watch out though, too many connection and mongodb will suffer. If you have a big server try more, if not try less
 const url = `mongodb://${user}:${password}@mongo/MIVB?authMechanism=${authMechanism}&poolSize=300&minSize=200`;
+console.log(url);
 const client = new MongoClient(url, {
     useNewUrlParser: true
 });

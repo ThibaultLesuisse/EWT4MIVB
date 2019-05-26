@@ -4,8 +4,7 @@ const StreamZip = require('node-stream-zip');
 const https = require('https');
 const readline = require('readline');
 const array = require("./utils/array");
-
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '/../.env')})
 
 module.exports = {
     parse: async () => {
