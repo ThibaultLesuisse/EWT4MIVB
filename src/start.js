@@ -3,6 +3,7 @@ const ewt = require('./ewt_calc');
 const cleaner = require('./cleaner')
 const file_structure = require('./file_structure');
 const cron = require('node-cron');
+const path = require('path')
 
 async function run_every_24_hours(){
    try {
@@ -17,7 +18,7 @@ async function run_every_24_hours(){
    } 
 }
 //Start every day at 12:00
-cron.schedule('0 12 * * *', async () => {
+cron.schedule('29 12 * * *', async () => {
     await run_every_24_hours();
 });
 //Now we run it. We need to do this to have access to async/await!
