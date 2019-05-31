@@ -120,7 +120,9 @@ async function run(date) {
                             });
                             fs.writeFile(path.join(__dirname, '/../files/result/delay.json'), JSON.stringify(result), err => {
                                 if (err) reject(err);
+                                client.close()
                                 resolve();
+
                             })
                         } else {
                             fs.readFile(path.join(__dirname, '/../files/result/delay.json'), 'UTF-8', (err, data) => {
@@ -132,6 +134,7 @@ async function run(date) {
                                 });
                                 fs.writeFile(path.join(__dirname, '/../files/result/delay.json'), JSON.stringify(result), err => {
                                     if (err) reject(err);
+                                    client.close()
                                     resolve();
                                 });
                             })
