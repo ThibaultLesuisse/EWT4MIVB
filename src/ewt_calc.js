@@ -96,6 +96,7 @@ async function run(date) {
 
                                     })
                                 }
+                                cursor.close();
                                 resolve();
                             }))
                         }
@@ -120,7 +121,6 @@ async function run(date) {
                             });
                             fs.writeFile(path.join(__dirname, '/../files/result/delay.json'), JSON.stringify(result), err => {
                                 if (err) reject(err);
-                                client.close()
                                 resolve();
 
                             })
@@ -134,7 +134,6 @@ async function run(date) {
                                 });
                                 fs.writeFile(path.join(__dirname, '/../files/result/delay.json'), JSON.stringify(result), err => {
                                     if (err) reject(err);
-                                    client.close()
                                     resolve();
                                 });
                             })

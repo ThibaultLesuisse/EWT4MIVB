@@ -35,7 +35,7 @@ function unzip() {
             zip.on('ready', () => {
                 zip.extract(null, path.join(__dirname, '/../tmp/gtfs/'), (err, count) => {
                     if(err)reject(err);
-                    console.log("Zipfile has been extracted")
+                    console.log("(2/6) Zipfile has been extracted")
                     zip.close();
                     resolve();
                 });
