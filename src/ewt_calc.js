@@ -10,7 +10,6 @@ const password = encodeURIComponent(process.env.MONGO_PASSWORD);
 const authMechanism = 'DEFAULT';
 //The default poolSize is only 5, we need way more connections.... Watch out though, too many connection and mongodb will suffer. If you have a big server try more, if not try less
 const url = `mongodb://${user}:${password}@mongo/MIVB?authMechanism=${authMechanism}&poolSize=300&minSize=200`;
-console.log(url);
 
 const client = new MongoClient(url, {
     useNewUrlParser: true
@@ -39,9 +38,9 @@ async function run(date) {
     return new Promise((resolve, reject) => {
         fs.readFile(path.join(__dirname, '/../tmp/files/39.json'), async (err, data) => {
             try {
+                if (err) reject(err)
                 let day = new Date(date + ", 2019" + " UTC +01:00").getDay();
                 //If the file was not read it makes no sense to continue
-                if (err) reject(err)
                 let line_timetable = JSON.parse(data);
                 let collection = db.collection("MIVB");
                 let EWT = [];
