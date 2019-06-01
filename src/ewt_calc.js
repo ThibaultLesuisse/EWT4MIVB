@@ -22,8 +22,9 @@ module.exports = () => {
             if (err) reject(err);
             db = client.db("MIVB");
             // We need to get all the data processed from the day before! 
-            let day = new Date(Date.now()).getDate() - 1;
-            let month = new Date(Date.now()).toLocaleString('en-us', {
+            let day = new Date(Date.now() - 86400000 ).getDate();
+            // Also substract a day from the month. Otherwise june 1 will become june 30
+            let month = new Date(Date.now()- 86400000).toLocaleString('en-us', {
                 month: 'long'
             });
             await run(month + " " + day);
