@@ -1,26 +1,12 @@
 const fs = require('fs');
 const path = require('path');
-const MongoClient = require('mongodb').MongoClient;
+const mongo = require('./utils/mongo');
 const BigNumber = require('bignumber.js');
-require('dotenv').config({ path: path.join(__dirname, '/../.env')})
-
-// Database credentials
-const user = encodeURIComponent(process.env.MONGO_USERNAME);
-const password = encodeURIComponent(process.env.MONGO_PASSWORD);
-const authMechanism = 'DEFAULT';
-//The default poolSize is only 5, we need way more connections.... Watch out though, too many connection and mongodb will suffer. If you have a big server try more, if not try less
-const url = `mongodb://${user}:${password}@mongo/MIVB?authMechanism=${authMechanism}&poolSize=300&minSize=200`;
-
-const client = new MongoClient(url, {
-    useNewUrlParser: true
-});
-
+require('dotenv').config({ path: path.join(__dirname, '/../.env')});
 
 module.exports = () => {
-    return new Promise((resolve, reject) => {
-        client.connect(async (err) => {
-            if (err) reject(err);
-            db = client.db("MIVB");
+    return new Promise(async (resolve, reject) => {
+
             // We need to get all the data processed from the day before! 
             let day = new Date(Date.now() - 86400000 ).getDate();
             // Also substract a day from the month. Otherwise june 1 will become june 30
@@ -29,7 +15,7 @@ module.exports = () => {
             });
             await run(month + " " + day);
             resolve()
-        });
+        
     })
 
 }
@@ -43,7 +29,6 @@ async function run(date) {
                 let day = new Date(date + ", 2019" + " UTC +01:00").getDay();
                 //If the file was not read it makes no sense to continue
                 let line_timetable = JSON.parse(data);
-                let collection = db.collection("MIVB");
                 let EWT = [];
                 let promises = [];
                 line_timetable.forEach(trip => {
@@ -60,45 +45,52 @@ async function run(date) {
                         if (trip.days.includes(day)) {
                             //The promise never rejects. That's not good coding practice but we can't risk it. Otherwise promise.all may fail
                             promises.push(new Promise(async (resolve, reject) => {
-                                const cursor = await collection.find({
+                                let db = mongo.use();
+                                const cursor = await db.collection("MIVB").find({
                                     "points.pointId": stop.stop_id,
                                     time: {
                                         $lt: end_time,
                                         $gt: start_time
                                     }
                                 });
-                                while (await cursor.hasNext()) {
-                                    const doc = await cursor.next();
-                                    doc.points.forEach(point => {
-                                        for (let i = 0; i < point.passingTimes.length; i++) {
-                                            if (point.passingTimes[i].lineId == "39") {
-                                                //We need to check the destination!
-                                                if (trip.direction == point.passingTimes[i].destination.fr ) {
-                                                    EWT.push({
-                                                        stop_id: stop.stop_id,
-                                                        arrival_time: new Date(date + ", 2019 " + stop.arrival_time + " UTC +01:00").toString(),
-                                                        estimated_arrival: new Date(point.passingTimes[i].expectedArrivalTime).toString(),
-                                                        analyze_time: new Date(start_time).toString(),
-                                                        delay: new Date(point.passingTimes[i].expectedArrivalTime).getTime() - new Date(date + ", 2019 " + stop.arrival_time + " UTC +01:00").getTime(),
-                                                    });
-                                                    break;
-                                                } else if (trip.direction == point.passingTimes[i].destination.fr ) {
-                                                    EWT.push({
-                                                        stop_id: stop.stop_id,
-                                                        arrival_time: new Date(date + ", 2019 " + stop.arrival_time + " UTC +01:00").toString(),
-                                                        estimated_arrival: new Date(point.passingTimes[i].expectedArrivalTime).toString(),
-                                                        analyze_time: new Date(start_time).toString(),
-                                                        delay: new Date(point.passingTimes[i].expectedArrivalTime).getTime() - new Date(date + ", 2019 " + stop.arrival_time + " UTC +01:00").getTime(),
-                                                    });
-                                                    break;
+                                try {
+                                    while (await cursor.hasNext()) {
+                                        const doc = await cursor.next();
+                                        doc.points.forEach(point => {
+                                            for (let i = 0; i < point.passingTimes.length; i++) {
+                                                if (point.passingTimes[i].lineId == "39") {
+                                                    //We need to check the destination!
+                                                    if (trip.direction == point.passingTimes[i].destination.fr ) {
+                                                        EWT.push({
+                                                            stop_id: stop.stop_id,
+                                                            arrival_time: new Date(date + ", 2019 " + stop.arrival_time + " UTC +01:00").toString(),
+                                                            estimated_arrival: new Date(point.passingTimes[i].expectedArrivalTime).toString(),
+                                                            analyze_time: new Date(start_time).toString(),
+                                                            delay: new Date(point.passingTimes[i].expectedArrivalTime).getTime() - new Date(date + ", 2019 " + stop.arrival_time + " UTC +01:00").getTime(),
+                                                        });
+                                                        break;
+                                                    } else if (trip.direction == point.passingTimes[i].destination.fr ) {
+                                                        EWT.push({
+                                                            stop_id: stop.stop_id,
+                                                            arrival_time: new Date(date + ", 2019 " + stop.arrival_time + " UTC +01:00").toString(),
+                                                            estimated_arrival: new Date(point.passingTimes[i].expectedArrivalTime).toString(),
+                                                            analyze_time: new Date(start_time).toString(),
+                                                            delay: new Date(point.passingTimes[i].expectedArrivalTime).getTime() - new Date(date + ", 2019 " + stop.arrival_time + " UTC +01:00").getTime(),
+                                                        });
+                                                        break;
+                                                    }
                                                 }
                                             }
-                                        }
-
-                                    })
-                                }
-                                cursor.close();
-                                resolve();
+    
+                                        })
+                                    }
+                                } catch (error) {
+                                    console.error("[ewt_calc.js:102]Database error")
+                                    reject(error)
+                                } finally {
+                                    //cursor.close();
+                                    resolve();
+                                }        
                             }))
                         }
                     })
@@ -122,6 +114,8 @@ async function run(date) {
                             });
                             fs.writeFile(path.join(__dirname, '/../files/result/delay.json'), JSON.stringify(result), err => {
                                 if (err) reject(err);
+                                //Closing the connections isn't advised but otherwise the topology will break
+                                //client.close()
                                 resolve();
 
                             })
@@ -135,6 +129,7 @@ async function run(date) {
                                 });
                                 fs.writeFile(path.join(__dirname, '/../files/result/delay.json'), JSON.stringify(result), err => {
                                     if (err) reject(err);
+                                    //client.close()
                                     resolve();
                                 });
                             })
@@ -148,7 +143,7 @@ async function run(date) {
 
             } catch (error) {
                 reject(error);
-                client.close()
+                //client.close()
                 console.error(error);
             }
 

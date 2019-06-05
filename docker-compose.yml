@@ -39,6 +39,8 @@ services:
     container_name: nodejs
     restart: unless-stopped
     working_dir: /app
+    logging:
+      driver: none
     environment: 
       NODE_ENV: production
     networks:

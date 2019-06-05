@@ -3,10 +3,12 @@ const ewt = require('./ewt_calc');
 const cleaner = require('./cleaner')
 const file_structure = require('./file_structure');
 const cron = require('node-cron');
-const path = require('path')
+const path = require('path');
+const mongo = require('./utils/mongo');
 
 async function run_every_24_hours(){
    try {
+    await mongo.connect();
     await file_structure();
     await gtfs.parse();
     await ewt();
@@ -18,7 +20,7 @@ async function run_every_24_hours(){
    } 
 }
 //Start every day at 12:00
-cron.schedule('0 12 * * *', async () => {
+cron.schedule('0 10 * * *', async () => {
     await run_every_24_hours();
 });
 //Now we run it. We need to do this to have access to async/await!

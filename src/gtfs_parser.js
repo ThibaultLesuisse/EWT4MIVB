@@ -152,7 +152,7 @@ function parse_gtfs() {
             }
         });
         rl.on('close', async () => {
-            await estimate_ewt(stoptimes).then(() => console.log("Done estimating EWT, written result to file"));
+            await estimate_ewt(stoptimes);
             fs.writeFile(path.join(__dirname, "/../tmp/files/39.json"), JSON.stringify(stoptimes), (err) => {
                 if (err) console.log("Error while writing resulting json file.");
                 console.log("(3/6) Done, the EWT calculator can be started!");
@@ -218,12 +218,12 @@ function estimate_ewt(stoptimes) {
         let sundays_result = sundays.reduce((a,b) => a + (Math.sqrt(b)), 0);
         let sundays_result_denominator = weekdays.reduce((a,b) => a + b);
 
-        fs.writeFile("./files/result/39_ewt.json", JSON.stringify({
+        fs.writeFile(path.join(__dirname, '/../files/result/39_ewt.json'), JSON.stringify({
             ewt_weekdays: ((weekdays_result / ( 2 * weekdays_result_denominator)) / 60000),
             ewt_saturdays: ((saturdays_result / (2 * saturdays_result_denominator)) / 60000),
             ewt_sundays: ((sundays_result /(2 * sundays_result_denominator) ) / 60000 )
         }), (err) => {
-            if (err) console.log("error writing file");
+            if (err) console.log("[gtfs_parser.js:226] Error writing file\n" + err.stack );
             resolve();
         })
     })
