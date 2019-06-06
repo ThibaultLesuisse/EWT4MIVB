@@ -6,7 +6,9 @@ const readline = require('readline');
 const array = require("./utils/array");
 const BigNumber = require('bignumber.js');
 
-require('dotenv').config({ path: path.join(__dirname, '/../.env')})
+require('dotenv').config({
+    path: path.join(__dirname, '/../.env')
+})
 
 module.exports = {
     parse: async () => {
@@ -36,7 +38,7 @@ function unzip() {
             });
             zip.on('ready', () => {
                 zip.extract(null, path.join(__dirname, '/../tmp/gtfs/'), (err, count) => {
-                    if(err)reject(err);
+                    if (err) reject(err);
                     console.log("(2/6) Zipfile has been extracted")
                     zip.close();
                     resolve();
@@ -81,7 +83,7 @@ function parse_gtfs() {
         // REGEXS
         const TRIPS_REGEX = /^(?:19),(\d{9}),(\d{18}),"([A-Za-z0-9\-()\s]+)",(0|1)/gm;
         let data = fs.readFileSync(path.join(__dirname, "/../tmp/gtfs/trips.txt"), "utf8")
-        let parsed_calendar = parse_gtfsfile(fs.readFileSync(path.join(__dirname,'/../tmp/gtfs/calendar.txt'), 'utf8'));
+        let parsed_calendar = parse_gtfsfile(fs.readFileSync(path.join(__dirname, '/../tmp/gtfs/calendar.txt'), 'utf8'));
 
         match = TRIPS_REGEX.exec(data);
         while (match != null) {
@@ -180,55 +182,43 @@ function estimate_ewt(stoptimes) {
         // We need to calculate the time bewteen two trams. We need to be sure that are headed in the same direction and starting from the same point
         // and working on the same days. As the array is sorted this should be the closest match but it's dangerous to assume that....
         let _values = [];
-        stoptimes.forEach(a => {
-            let _value = stoptimes.map(b => {
-                if (array(a.days, b.days) &&
-                    a.timetable[0].stop_id == b.timetable[0].stop_id &&
-                    a.direction_id == b.direction_id &&
-                    a != b &&
-                    new Date(b.timetable[0].arrival_time + " May 2, 2019").getTime() > new Date(a.timetable[0].arrival_time + " May 2, 2019").getTime()
-                ) {
-                    let c = new Date(b.timetable[0].arrival_time + " May 2, 2019").getTime() - new Date(a.timetable[0].arrival_time + " May 2, 2019").getTime();
-                    if (c && typeof c === "number") return {
-                        days: b.days,
-                        swt: c
+        stoptimes.forEach((a, index) => {  
+            //We need to find the first occurence that matches the conditions...
+                    for (let i = index + 1; i < stoptimes.length - 1; i++) {
+                        if (array(a.days, stoptimes[i].days) &&
+                            a.timetable[0].stop_id == stoptimes[i].timetable[0].stop_id &&
+                            a.direction_id == stoptimes[i].direction_id &&
+                            new Date(stoptimes[i].timetable[0].arrival_time + " May 2, 2019").getTime() > new Date(a.timetable[0].arrival_time + " May 2, 2019").getTime()
+                        ) {
+                            let c = new Date(stoptimes[i].timetable[2].arrival_time + " May 2, 2019").getTime() - new Date(a.timetable[2].arrival_time + " May 2, 2019").getTime();
+                            if (c && typeof c === "number" && c < 2400000) _values.push({
+                                days: a.days,
+                                swt: c
+                            });
+                            break;
+                        }
                     }
-                }
-            })
-            _value.sort((a, b) => {
-                if (a.swt < b.swt) {
-                    return -1
-                } else {
-                    return 1
-                }
-            })
-            if (_value[0]) _values.push(_value[0]);
         });
         let weekdays = [];
         let saturdays = [];
         let sundays = [];
         //Here we have to make some assumptions when it comes to "special days", consider the first of may. It is a holliday so the timetables will look like a sunday...
         _values.forEach(_value => {
-            if(_value.days.includes(1))weekdays.push(_value.swt)
-            if(_value.days.includes(6))saturdays.push(_value.swt)
-            if(_value.days.includes(0))sundays.push(_value.swt)
+            if (_value.days.includes(1)) weekdays.push(_value.swt)
+            if (_value.days.includes(6)) saturdays.push(_value.swt)
+            if (_value.days.includes(0)) sundays.push(_value.swt)
         });
-        let weekdays_result = weekdays.reduce((a, b) =>  a + (Math.pow(b, 2)) , 0);
-        let weekdays_result_denominator = weekdays.reduce((a,b) => a + b, 0);
-        let saturdays_result = saturdays.reduce((a,b) => a + (Math.pow(b, 2)), 0);
-        let saturdays_result_denominator = weekdays.reduce((a,b) => a + b, 0);
-        let sundays_result = sundays.reduce((a,b) => a + (Math.pow(b, 2)), 0);
-        let sundays_result_denominator = weekdays.reduce((a,b) => a + b, 0);
-        let ewt_weekdays = new BigNumber((weekdays_result / ( 2 * weekdays_result_denominator)) / 60000);
-        let ewt_saturdays = new BigNumber((saturdays_result / (2 * saturdays_result_denominator)) / 60000);
-        let ewt_sundays = new BigNumber((sundays_result /(2 * sundays_result_denominator) ) / 60000 );
+        let _weekdays = weekdays.reduce((a,b) => a + b, 0);
+        let _saturdays = saturdays.reduce((a,b) => a + b, 0);
+        let _sundays = sundays.reduce((a,b) => a + b, 0);
+
 
         fs.writeFile(path.join(__dirname, '/../files/result/39_ewt.json'), JSON.stringify({
-            ewt_weekdays: ewt_weekdays.toFixed(5),
-            ewt_saturdays: ewt_saturdays.toFixed(5),
-            ewt_sundays: ewt_sundays.toFixed(5)
+            ewt_weekdays: (_weekdays/weekdays.length)/60000,
+            ewt_saturdays: (_saturdays/saturdays.length)/60000,
+            ewt_sundays: (_sundays/sundays.length)/60000
         }), (err) => {
-            if (err) console.log("[gtfs_parser.js:226] Error writing file\n" + err.stack );
+            if (err) console.log("[gtfs_parser.js:226] Error writing file\n" + err.stack);
             resolve();
         })
     })

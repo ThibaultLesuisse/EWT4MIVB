@@ -3,7 +3,7 @@ const MongoClient = require('mongodb').MongoClient;
 const user = encodeURIComponent(process.env.MONGO_USERNAME);
 const password = encodeURIComponent(process.env.MONGO_PASSWORD);
 const authMechanism = 'DEFAULT';
-const url = `mongodb://${user}:${password}@mongo/MIVB?authMechanism=${authMechanism}`;
+const url = `mongodb://${user}:${password}@174.138.107.45/MIVB?authMechanism=${authMechanism}`;
 
 const client = new MongoClient(url, {
     useNewUrlParser: true
