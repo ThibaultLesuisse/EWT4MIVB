@@ -35,8 +35,8 @@ async function run(date) {
                     trip.timetable.forEach((stop, index) => {
 
                         let start_time_checked = split_hour_if_necessary(stop.arrival_time);
-                        let start_time = new Date(date + ", 2019 " + start_time_checked.time.toString() + " UTC +01:00").getTime() - 70000;
-                        let end_time = new Date(date + ", 2019 " + start_time_checked.time.toString() + " UTC +01:00").getTime() - 40000;
+                        let start_time = new Date(date + ", 2019 " + start_time_checked.time.toString() + " UTC +02:00").getTime() - 70000;
+                        let end_time = new Date(date + ", 2019 " + start_time_checked.time.toString() + " UTC +02:00").getTime() - 40000;
                         // there are 86 400 000 milisconds in a day. As we first substracted a 24 hours we need to add a day.
                         if (start_time_checked.bool) {
                             start_time = +86400000,
@@ -63,29 +63,20 @@ async function run(date) {
                                                     if (trip.direction == point.passingTimes[i].destination.fr ) {
                                                         EWT.push({
                                                             stop_id: stop.stop_id,
-                                                            arrival_time: new Date(date + ", 2019 " + stop.arrival_time + " UTC +01:00").toString(),
+                                                            arrival_time: new Date(date + ", 2019 " + stop.arrival_time + " UTC +02:00").toString(),
                                                             estimated_arrival: new Date(point.passingTimes[i].expectedArrivalTime).toString(),
                                                             analyze_time: new Date(start_time).toString(),
-                                                            delay: new Date(point.passingTimes[i].expectedArrivalTime).getTime() - new Date(date + ", 2019 " + stop.arrival_time + " UTC +01:00").getTime(),
+                                                            delay: new Date(point.passingTimes[i].expectedArrivalTime).getTime() - new Date(date + ", 2019 " + stop.arrival_time + " UTC +02:00").getTime(),
                                                         });
                                                         break;
-                                                    } else if (trip.direction == point.passingTimes[i].destination.fr ) {
-                                                        EWT.push({
-                                                            stop_id: stop.stop_id,
-                                                            arrival_time: new Date(date + ", 2019 " + stop.arrival_time + " UTC +01:00").toString(),
-                                                            estimated_arrival: new Date(point.passingTimes[i].expectedArrivalTime).toString(),
-                                                            analyze_time: new Date(start_time).toString(),
-                                                            delay: new Date(point.passingTimes[i].expectedArrivalTime).getTime() - new Date(date + ", 2019 " + stop.arrival_time + " UTC +01:00").getTime(),
-                                                        });
-                                                        break;
-                                                    }
+                                                    } 
                                                 }
                                             }
     
                                         })
                                     }
                                 } catch (error) {
-                                    console.error("[ewt_calc.js:102]Database error")
+                                    console.error("[ewt_calc.js:102]Database error\n" + error.stack)
                                     reject(error)
                                 } finally {
                                     //cursor.close();
@@ -108,9 +99,11 @@ async function run(date) {
                         //This contains the average delay
                         if (!fs.existsSync(path.join(__dirname, '/../files/result/delay.json'))) {
                             let result = [];
+                            let delay = new BigNumber(dailey_delay);
+                            
                             result.push({
                                 date: date,
-                                delay: new BigNumber(dailey_delay).dividedBy(EWT.length).dividedBy(1000).dividedBy(60).toFixed(2)
+                                delay: delay.dividedBy(EWT.length).dividedBy(1000).dividedBy(60).toFixed(2)
                             });
                             fs.writeFile(path.join(__dirname, '/../files/result/delay.json'), JSON.stringify(result), err => {
                                 if (err) reject(err);
@@ -123,9 +116,10 @@ async function run(date) {
                             fs.readFile(path.join(__dirname, '/../files/result/delay.json'), 'UTF-8', (err, data) => {
                                 if (err) reject(err);
                                 let result = JSON.parse(data);
+                                let delay = new BigNumber(dailey_delay);
                                 result.push({
                                     date: date,
-                                    delay: new BigNumber(dailey_delay).dividedBy(EWT.length).dividedBy(1000).dividedBy(60).toFixed(2)
+                                    delay: delay.dividedBy(EWT.length).dividedBy(1000).dividedBy(60).toFixed(2)
                                 });
                                 fs.writeFile(path.join(__dirname, '/../files/result/delay.json'), JSON.stringify(result), err => {
                                     if (err) reject(err);

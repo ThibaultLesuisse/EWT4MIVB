@@ -4,6 +4,8 @@ const StreamZip = require('node-stream-zip');
 const https = require('https');
 const readline = require('readline');
 const array = require("./utils/array");
+const BigNumber = require('bignumber.js');
+
 require('dotenv').config({ path: path.join(__dirname, '/../.env')})
 
 module.exports = {
@@ -77,7 +79,7 @@ function parse_gtfs() {
         let trips = [];
         let stoptimes = [];
         // REGEXS
-        const TRIPS_REGEX = /^(?:18),(\d{9}),(\d{18}),"([A-Za-z0-9\-()]+)",(0|1)/gm;
+        const TRIPS_REGEX = /^(?:19),(\d{9}),(\d{18}),"([A-Za-z0-9\-()\s]+)",(0|1)/gm;
         let data = fs.readFileSync(path.join(__dirname, "/../tmp/gtfs/trips.txt"), "utf8")
         let parsed_calendar = parse_gtfsfile(fs.readFileSync(path.join(__dirname,'/../tmp/gtfs/calendar.txt'), 'utf8'));
 
@@ -211,17 +213,20 @@ function estimate_ewt(stoptimes) {
             if(_value.days.includes(6))saturdays.push(_value.swt)
             if(_value.days.includes(0))sundays.push(_value.swt)
         });
-        let weekdays_result = weekdays.reduce((a, b) =>  a + (Math.sqrt(b)) , 0);
-        let weekdays_result_denominator = weekdays.reduce((a,b) => a + b);
-        let saturdays_result = saturdays.reduce((a,b) => a + (Math.sqrt(b)), 0);
-        let saturdays_result_denominator = weekdays.reduce((a,b) => a + b);
-        let sundays_result = sundays.reduce((a,b) => a + (Math.sqrt(b)), 0);
-        let sundays_result_denominator = weekdays.reduce((a,b) => a + b);
+        let weekdays_result = weekdays.reduce((a, b) =>  a + (Math.pow(b, 2)) , 0);
+        let weekdays_result_denominator = weekdays.reduce((a,b) => a + b, 0);
+        let saturdays_result = saturdays.reduce((a,b) => a + (Math.pow(b, 2)), 0);
+        let saturdays_result_denominator = weekdays.reduce((a,b) => a + b, 0);
+        let sundays_result = sundays.reduce((a,b) => a + (Math.pow(b, 2)), 0);
+        let sundays_result_denominator = weekdays.reduce((a,b) => a + b, 0);
+        let ewt_weekdays = new BigNumber((weekdays_result / ( 2 * weekdays_result_denominator)) / 60000);
+        let ewt_saturdays = new BigNumber((saturdays_result / (2 * saturdays_result_denominator)) / 60000);
+        let ewt_sundays = new BigNumber((sundays_result /(2 * sundays_result_denominator) ) / 60000 );
 
         fs.writeFile(path.join(__dirname, '/../files/result/39_ewt.json'), JSON.stringify({
-            ewt_weekdays: ((weekdays_result / ( 2 * weekdays_result_denominator)) / 60000),
-            ewt_saturdays: ((saturdays_result / (2 * saturdays_result_denominator)) / 60000),
-            ewt_sundays: ((sundays_result /(2 * sundays_result_denominator) ) / 60000 )
+            ewt_weekdays: ewt_weekdays.toFixed(5),
+            ewt_saturdays: ewt_saturdays.toFixed(5),
+            ewt_sundays: ewt_sundays.toFixed(5)
         }), (err) => {
             if (err) console.log("[gtfs_parser.js:226] Error writing file\n" + err.stack );
             resolve();

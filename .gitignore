@@ -65,4 +65,5 @@ gtfs/
 
 # Files
 files/delay/
+files/result
 tmp/
