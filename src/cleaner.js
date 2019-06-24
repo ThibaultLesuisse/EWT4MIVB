@@ -21,21 +21,22 @@ module.exports = () => {
 function delete_old_database_objects() {
     return new Promise(async (resolve, reject) => {
 
-            
-            let delete_date = new Date(Date.now() - 172800000).getTime();
-            try {
-                let db =  mongo.use();
-                let r = await db.collection("MIVB").deleteMany({
-                    time: {
-                        $lt: delete_date
-                    }
-                });
-                console.log(`(5/6) Cleaned database & removed files `);
-            } catch (error) {
-                reject(error);
-            }
-            resolve();
-       
+
+        let delete_date = new Date(Date.now() - 172800000).getTime();
+        try {
+            let db = mongo.use();
+            let r = await db.collection("MIVB").deleteMany({
+                time: {
+                    $lt: delete_date
+                }
+            })
+            await db.collection("MIVB").reIndex();
+            console.log(`(5/6) Cleaned database & removed files `);
+        } catch (error) {
+            reject(error);
+        }
+        resolve();
+
     })
 }
 

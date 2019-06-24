@@ -208,15 +208,19 @@ function estimate_ewt(stoptimes) {
             if (_value.days.includes(6)) saturdays.push(_value.swt)
             if (_value.days.includes(0)) sundays.push(_value.swt)
         });
-        let _weekdays = weekdays.reduce((a,b) => a + b, 0);
-        let _saturdays = saturdays.reduce((a,b) => a + b, 0);
-        let _sundays = sundays.reduce((a,b) => a + b, 0);
+        let _weekdays = weekdays.reduce((a,b) => a + Math.pow(b, 2), 0);
+        let _saturdays = saturdays.reduce((a,b) => a + Math.pow(b, 2), 0);
+        let _sundays = sundays.reduce((a,b) => a + Math.pow(b, 2), 0);
+
+        let _weekdays_sum = weekdays.reduce((a,b) => a + b, 0);
+        let _saturdays_sum = weekdays.reduce((a,b) => a + b, 0);
+        let _sundays_sum = weekdays.reduce((a,b) => a + b, 0);
 
 
         fs.writeFile(path.join(__dirname, '/../files/result/39_ewt.json'), JSON.stringify({
-            ewt_weekdays: (_weekdays/weekdays.length)/60000,
-            ewt_saturdays: (_saturdays/saturdays.length)/60000,
-            ewt_sundays: (_sundays/sundays.length)/60000
+            ewt_weekdays: (_weekdays/_weekdays_sum)/60000,
+            ewt_saturdays: (_saturdays/_saturdays_sum)/60000,
+            ewt_sundays: (_sundays/_sundays_sum)/60000
         }), (err) => {
             if (err) console.log("[gtfs_parser.js:226] Error writing file\n" + err.stack);
             resolve();
