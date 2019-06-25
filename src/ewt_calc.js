@@ -8,12 +8,17 @@ module.exports = () => {
     return new Promise(async (resolve, reject) => {
 
             // We need to get all the data processed from the day before! 
-            let day = new Date(Date.now() - 86400000 ).getDate();
+            let day = new Date(Date.now() - 172800000 ).getDate();
             // Also substract a day from the month. Otherwise june 1 will become june 30
-            let month = new Date(Date.now()- 86400000).toLocaleString('en-us', {
+            let month = new Date(Date.now()- 172800000).toLocaleString('en-us', {
                 month: 'long'
             });
-            await run(month + " " + day);
+            try {
+                await run(month + " " + day);
+
+            } catch (error) {
+                reject(error)
+            }
             resolve()
         
     })
@@ -39,9 +44,10 @@ async function run(date) {
                         let end_time = new Date(date + ", 2019 " + start_time_checked.time.toString() + " UTC +02:00").getTime() - 40000;
                         // there are 86 400 000 milisconds in a day. As we first substracted a 24 hours we need to add a day.
                         if (start_time_checked.bool) {
-                            start_time = +86400000,
-                                end_time = +86400000
+                            start_time = +172800000,
+                                end_time = +172800000
                         }
+                        //Make sure that the correct schedules are used. Only the schedule of sunday for sundays
                         if (trip.days.includes(day)) {
                             //The promise never rejects. That's not good coding practice but we can't risk it. Otherwise promise.all may fail
                             promises.push(new Promise(async (resolve, reject) => {
@@ -56,24 +62,25 @@ async function run(date) {
                                 try {
                                     while (await cursor.hasNext()) {
                                         const doc = await cursor.next();
-                                        doc.points.forEach(point => {
-                                            for (let i = 0; i < point.passingTimes.length; i++) {
-                                                if (point.passingTimes[i].lineId == "39") {
-                                                    //We need to check the destination!
-                                                    if (trip.direction == point.passingTimes[i].destination.fr ) {
-                                                        EWT.push({
-                                                            stop_id: stop.stop_id,
-                                                            arrival_time: new Date(date + ", 2019 " + stop.arrival_time + " UTC +02:00").toString(),
-                                                            estimated_arrival: new Date(point.passingTimes[i].expectedArrivalTime).toString(),
-                                                            analyze_time: new Date(start_time).toString(),
-                                                            delay: new Date(point.passingTimes[i].expectedArrivalTime).getTime() - new Date(date + ", 2019 " + stop.arrival_time + " UTC +02:00").getTime(),
-                                                        });
-                                                        break;
-                                                    } 
+                                            doc.points.forEach(point => {
+                                                for (let i = 0; i < point.passingTimes.length; i++) {
+                                                    if (point.passingTimes[i].lineId == "39" ) {
+                                                        //We need to check the destination!
+                                                        if (trip.direction == point.passingTimes[i].destination.fr ) {
+                                                            EWT.push({
+                                                                stop_id: stop.stop_id,
+                                                                arrival_time: new Date(date + ", 2019 " + stop.arrival_time + " UTC +02:00").toString(),
+                                                                estimated_arrival: new Date(point.passingTimes[i].expectedArrivalTime).toString(),
+                                                                analyze_time: new Date(start_time).toString(),
+                                                                delay: new Date(point.passingTimes[i].expectedArrivalTime).getTime() - new Date(date + ", 2019 " + stop.arrival_time + " UTC +02:00").getTime(),
+                                                            });
+                                                            break;
+                                                        } 
+                                                    }
                                                 }
-                                            }
-    
-                                        })
+                                            })
+                                        
+                                      
                                     }
                                 } catch (error) {
                                     console.error("[ewt_calc.js:102]Database error\n" + error.stack)

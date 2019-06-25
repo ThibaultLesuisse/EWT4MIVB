@@ -126,7 +126,7 @@ function parse_gtfs() {
                     parsed_stop_times[3] = "89"
                 }
                 //Cleaning up the mess made by MIVB. In the GTFS files they have stop ID that end with F and G but not in their real-time data. So we need to get
-                //rid of the F and the G
+                //rid of the F and the G which occur frequently...
                 if (parsed_stop_times[3].length = 5) {
                     parsed_stop_times[3] = parsed_stop_times[3].slice(0, 4);
                 }
