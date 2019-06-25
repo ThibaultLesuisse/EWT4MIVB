@@ -20,7 +20,7 @@ async function run_every_24_hours(){
    } 
 }
 //Start every day at 12:00
-cron.schedule('*/2 * * * *', async () => {
+cron.schedule('0 10 * * *', async () => {
     await run_every_24_hours();
 });
 //Now we run it. We need to do this to have access to async/await!
