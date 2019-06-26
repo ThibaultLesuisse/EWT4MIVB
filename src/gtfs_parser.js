@@ -6,24 +6,43 @@ const readline = require('readline');
 const array = require("./utils/array");
 const BigNumber = require('bignumber.js');
 
+//This needs to happen as soon as possible. This could be redundant though.
 require('dotenv').config({
     path: path.join(__dirname, '/../.env')
 })
 
+
+//Can be very slow! As the trips.txt file from the GTFS archive is read line by line. 
+//This is done to make sure not too much memory is used. If memory is of no concern feel free to change
 module.exports = {
     parse: async () => {
         try {
             //They need to wait for eachother to finish otherwise they are going to fail.
             await check_zip_or_fetch();
             await unzip();
-            await parse_gtfs();
+            let lines = await read_lines();
+            await parse_gtfs(lines);
 
         } catch (error) {
             console.error(error);
         }
     },
 }
-
+/*
+ * Read the file which contains the lines 
+ *
+ */
+function read_lines() {
+    return new Promise((resolve, reject) => {
+        fs.readFile(path.join(__dirname, "/../lines.json"), (err, data) => {
+            if (err) reject(err)
+            resolve(JSON.parse(data));
+        })
+    })
+}
+/*
+ *   Unzips the Zipfile containing the GTFS files and writes them to disk
+ */
 function unzip() {
     return new Promise((resolve, reject) => {
         if (!fs.existsSync(path.join(__dirname, '/../tmp/gtfs/trips.txt'))) {
@@ -51,52 +70,37 @@ function unzip() {
     })
 
 }
-//GTFS-files are easy to parse, no need for difficult parser
-function parse_gtfsfile(data) {
-    let _data = data.split("\n");
-    let _parsed_result = [];
-    _data.forEach(element => {
-        _parsed_result.push(element.split(","));
-    });
-    return _parsed_result;
-}
-//We need to know what day the service is running. Each day is different (for example weekends)
-function days(slice) {
-    let result = [];
-    slice.forEach((day, index) => {
-        // This looks weird but but day 6 in the GTFS files is not day 6 in Javascript terms. The weeks start at a different day. Check out the GTFS-files where monday = 0 and the Javascript Date class where 0 is sunday
-        if (index === 6 && day === "1") result.push(0);
-        if (index === 0 && day === "1") result.push(1);
-        if (index === 1 && day === "1") result.push(2);
-        if (index === 2 && day === "1") result.push(3);
-        if (index === 3 && day === "1") result.push(4);
-        if (index === 4 && day === "1") result.push(5);
-        if (index === 5 && day === "1") result.push(6);
-    });
-    return result;
-}
 
-function parse_gtfs() {
+/*
+ * gets the lines and for each of them parses the necessary files from the GTFS files. Keep in mind that line number is NOT equal to line id!
+ */
+function parse_gtfs(lines) {
+    console.log(lines)
     return new Promise((resolve, reject) => {
         let trips = [];
         let stoptimes = [];
-        // REGEXS
-        const TRIPS_REGEX = /^(?:19),(\d{9}),(\d{18}),"([A-Za-z0-9\-()\s]+)",(0|1)/gm;
+        // REGEXS - This will gather every trip that contains or line 19 (39) or line 62 (95)
+        //This should be made dynamic but time constraints force me to do it this way!
+        let TRIPS_REGEX = /^(19|62),(\d{9}),(\d{18}),"([A-Za-z0-9\-()\s]+)",(0|1)/gm;
+
         let data = fs.readFileSync(path.join(__dirname, "/../tmp/gtfs/trips.txt"), "utf8")
+
+        //Files should never be Sync as it blocks the thread...
         let parsed_calendar = parse_gtfsfile(fs.readFileSync(path.join(__dirname, '/../tmp/gtfs/calendar.txt'), 'utf8'));
 
         match = TRIPS_REGEX.exec(data);
         while (match != null) {
             if (match[1] != null) {
                 for (let index = 0; index < parsed_calendar.length; index++) {
-                    if (parsed_calendar[index][0] === match[1]) {
+                    if (parsed_calendar[index][0] === match[2]) {
                         let _days = days(parsed_calendar[index].slice(1, 8));
                         trips.push({
-                            service_id: match[1],
-                            trip_id: match[2],
+                            line_id: match[1],
+                            service_id: match[2],
+                            trip_id: match[3],
                             days: _days,
-                            direction: match[3],
-                            direction_id: match[4]
+                            direction: match[4],
+                            direction_id: match[5]
                         });
                     }
                 }
@@ -140,6 +144,7 @@ function parse_gtfs() {
                     })
                 } else {
                     stoptimes.push({
+                        line_id: trip.line_id,
                         "trip": trip.trip_id,
                         direction_id: trip.direction_id,
                         direction: trip.direction,
@@ -156,13 +161,32 @@ function parse_gtfs() {
             }
         });
         rl.on('close', async () => {
-            await estimate_ewt(stoptimes);
-            fs.writeFile(path.join(__dirname, "/../tmp/files/39.json"), JSON.stringify(stoptimes), (err) => {
-                if (err) console.log("Error while writing resulting json file.");
-                console.log("(3/6) Done, the EWT calculator can be started!");
-                resolve();
+            //await estimate_ewt(stoptimes);
+            let write_promises = []
+            lines.forEach(line => {
+                write_promises.push(new Promise((res, rej) => {
+                    let _stoptimes;
+                    if (line == "39") _stoptimes = stoptimes.filter(stoptime => stoptime.line_id == "19");
+                    if (line == "95") _stoptimes = stoptimes.filter(stoptime => stoptime.line_id == "62");
+                    fs.writeFile(path.join(__dirname, `/../tmp/files/${line}.json`), JSON.stringify(_stoptimes), (err) => {
+                        if (err) rej(err);
+                        console.log("(3/6) Done, the EWT calculator can be started!");
+                        res();
+                    })
+                }))
             })
+            try {
+
+                await Promise.all(write_promises);
+                resolve();
+
+            } catch (error) {
+                reject(error)
+            }
+
         })
+
+
     })
 }
 /*
@@ -173,6 +197,7 @@ function estimate_ewt(stoptimes) {
     return new Promise((resolve, reject) => {
         //This needs to be sorted... otherwise it is useless
         stoptimes.sort((a, b) => {
+            // using May second is not going to influence the results as it just need a full date in order to recognize it as a date. It sorts based on hour so the day doens't matter
             if (new Date(a.timetable[0].arrival_time + " May 2, 2019").getTime() > new Date(b.timetable[0].arrival_time + " May 2, 2019").getTime()) {
                 return 1
             } else {
@@ -182,22 +207,22 @@ function estimate_ewt(stoptimes) {
         // We need to calculate the time bewteen two trams. We need to be sure that are headed in the same direction and starting from the same point
         // and working on the same days. As the array is sorted this should be the closest match but it's dangerous to assume that....
         let _values = [];
-        stoptimes.forEach((a, index) => {  
+        stoptimes.forEach((a, index) => {
             //We need to find the first occurence that matches the conditions...
-                    for (let i = index + 1; i < stoptimes.length - 1; i++) {
-                        if (array(a.days, stoptimes[i].days) &&
-                            a.timetable[0].stop_id == stoptimes[i].timetable[0].stop_id &&
-                            a.direction_id == stoptimes[i].direction_id &&
-                            new Date(stoptimes[i].timetable[0].arrival_time + " May 2, 2019").getTime() > new Date(a.timetable[0].arrival_time + " May 2, 2019").getTime()
-                        ) {
-                            let c = new Date(stoptimes[i].timetable[2].arrival_time + " May 2, 2019").getTime() - new Date(a.timetable[2].arrival_time + " May 2, 2019").getTime();
-                            if (c && typeof c === "number" && c < 2400000) _values.push({
-                                days: a.days,
-                                swt: c
-                            });
-                            break;
-                        }
-                    }
+            for (let i = index + 1; i < stoptimes.length - 1; i++) {
+                if (array(a.days, stoptimes[i].days) &&
+                    a.timetable[0].stop_id == stoptimes[i].timetable[0].stop_id &&
+                    a.direction_id == stoptimes[i].direction_id &&
+                    new Date(stoptimes[i].timetable[0].arrival_time + " May 2, 2019").getTime() > new Date(a.timetable[0].arrival_time + " May 2, 2019").getTime()
+                ) {
+                    let c = new Date(stoptimes[i].timetable[2].arrival_time + " May 2, 2019").getTime() - new Date(a.timetable[2].arrival_time + " May 2, 2019").getTime();
+                    if (c && typeof c === "number" && c < 2400000) _values.push({
+                        days: a.days,
+                        swt: c
+                    });
+                    break;
+                }
+            }
         });
         let weekdays = [];
         let saturdays = [];
@@ -208,19 +233,19 @@ function estimate_ewt(stoptimes) {
             if (_value.days.includes(6)) saturdays.push(_value.swt)
             if (_value.days.includes(0)) sundays.push(_value.swt)
         });
-        let _weekdays = weekdays.reduce((a,b) => a + Math.pow(b, 2), 0);
-        let _saturdays = saturdays.reduce((a,b) => a + Math.pow(b, 2), 0);
-        let _sundays = sundays.reduce((a,b) => a + Math.pow(b, 2), 0);
+        let _weekdays = weekdays.reduce((a, b) => a + Math.pow(b, 2), 0);
+        let _saturdays = saturdays.reduce((a, b) => a + Math.pow(b, 2), 0);
+        let _sundays = sundays.reduce((a, b) => a + Math.pow(b, 2), 0);
 
-        let _weekdays_sum = weekdays.reduce((a,b) => a + b, 0);
-        let _saturdays_sum = weekdays.reduce((a,b) => a + b, 0);
-        let _sundays_sum = weekdays.reduce((a,b) => a + b, 0);
+        let _weekdays_sum = weekdays.reduce((a, b) => a + b, 0);
+        let _saturdays_sum = weekdays.reduce((a, b) => a + b, 0);
+        let _sundays_sum = weekdays.reduce((a, b) => a + b, 0);
 
 
         fs.writeFile(path.join(__dirname, '/../files/result/39_ewt.json'), JSON.stringify({
-            ewt_weekdays: (_weekdays/_weekdays_sum)/60000,
-            ewt_saturdays: (_saturdays/_saturdays_sum)/60000,
-            ewt_sundays: (_sundays/_sundays_sum)/60000
+            ewt_weekdays: (_weekdays / _weekdays_sum) / 60000,
+            ewt_saturdays: (_saturdays / _saturdays_sum) / 60000,
+            ewt_sundays: (_sundays / _sundays_sum) / 60000
         }), (err) => {
             if (err) console.log("[gtfs_parser.js:226] Error writing file\n" + err.stack);
             resolve();
@@ -238,7 +263,7 @@ function check_zip_or_fetch() {
         method: 'GET',
         headers: {
             'Accept': 'application/zip',
-            'Authorization': `Bearer ${process.env.MIVB_API_KEY}`
+            'Authorization': `Bearer ${process.env.MIVB_API_KEY_0}`
         }
     }
     return new Promise((resolve, reject) => {
@@ -269,4 +294,29 @@ function check_zip_or_fetch() {
             }
         });
     });
+}
+//GTFS-files are easy to parse, no need for external parser
+function parse_gtfsfile(data) {
+    let _data = data.split("\n");
+    let _parsed_result = [];
+    _data.forEach(element => {
+        _parsed_result.push(element.split(","));
+    });
+    return _parsed_result;
+}
+//We need to know what day the service is running. Each day is different (for example weekends)
+function days(slice) {
+    let result = [];
+    slice.forEach((day, index) => {
+        // This looks weird but but day 6 in the GTFS files is not day 6 in Javascript terms. 
+        // The weeks start at a different day. Check out the GTFS-files where monday = 0 and the Javascript Date class where 0 is sunday
+        if (index === 6 && day === "1") result.push(0);
+        if (index === 0 && day === "1") result.push(1);
+        if (index === 1 && day === "1") result.push(2);
+        if (index === 2 && day === "1") result.push(3);
+        if (index === 3 && day === "1") result.push(4);
+        if (index === 4 && day === "1") result.push(5);
+        if (index === 5 && day === "1") result.push(6);
+    });
+    return result;
 }
