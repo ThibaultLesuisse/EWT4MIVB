@@ -14,8 +14,8 @@ module.exports = {
     connect: () => {
         return new Promise((resolve, reject) => {
             client.connect(async (err, client) => {
-                let db = client.db('MIVB');
                 if (err) reject(err);
+                let db = client.db('MIVB');
                 _db = db;
                 resolve();
             });

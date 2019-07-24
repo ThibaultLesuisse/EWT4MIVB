@@ -7,7 +7,7 @@ const mongo = require("./utils/mongo");
 module.exports = () => {
     return new Promise(async (resolve, reject) => {
         try {
-            await remove_GTFS_files();
+         //   await remove_GTFS_files();
             await delete_old_database_objects();
             resolve();
         } catch (error) {
@@ -20,8 +20,6 @@ module.exports = () => {
 
 function delete_old_database_objects() {
     return new Promise(async (resolve, reject) => {
-
-
         let delete_date = new Date(Date.now() - 172800000).getTime();
         try {
             let db = mongo.use();

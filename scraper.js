@@ -57,7 +57,7 @@ async function collectData() {
                 for (let i = 0; i < line_ids.length; i++) {
                     lines_ids_request = lines_ids_request.concat("," + line_ids[i]);
                     // 0 module 10 is also equal to 0 so we need need to ignore index = 0
-                    if (i % 10 == 0 && i != 0) {
+                    if (i % 9 == 0 && i != 0) {
                         //remove first ","
                         lines_ids_request = lines_ids_request.slice(1);
                         promises.push(fetchData(`https://opendata-api.stib-mivb.be/OperationMonitoring/4.0/PassingTimeByPoint/${encodeURIComponent(String(lines_ids_request))}`, options, true));
@@ -73,11 +73,14 @@ async function collectData() {
                     // Wait for all the promises to resolve
                     Promise.all(promises).then(data => {
                         // For one reason the data from the MIVB contains _id properties which messes with the mongodb database. Therefore it is best the remove that property
+                      
                         data.forEach((result) => {
+
                             delete result._id
                         })
                         let collection = db.collection("MIVB");
                         collection.insertMany(data, (error, result) => {
+
                             if (error) console.error("Error while inserting into the database \n" + error)
                     
                         })
@@ -102,7 +105,6 @@ async function collectData() {
 
 function fetchData(url, options, timestamp) {
     return new Promise((resolve, reject) => {
-        console.log(url)
         https.get(url, options, (res) => {
             let position = "";
 
