@@ -8,7 +8,7 @@ const path = require('path');
 
 
 //Collect data every 20 seconds
-cron.schedule('*/20 * * * * *', collectData);
+cron.schedule('*/30 * * * * *', collectData);
 
 // Database credentials
 const user = encodeURIComponent(process.env.MONGO_USERNAME);
@@ -69,6 +69,7 @@ async function collectData() {
                     //remove first ","
                     lines_ids_request = lines_ids_request.slice(1);
                     promises.push(fetchData(`https://opendata-api.stib-mivb.be/OperationMonitoring/4.0/PassingTimeByPoint/${encodeURIComponent(String(lines_ids_request))}`, options, true));
+                    lines_ids_request = "";
                 }
                     // Wait for all the promises to resolve
                     Promise.all(promises).then(data => {

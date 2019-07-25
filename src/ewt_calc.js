@@ -52,7 +52,7 @@ async function run(date, line) {
 
                         let start_time_checked = split_hour_if_necessary(stop.arrival_time);
                         let start_time = new Date(date + ", 2019 " + start_time_checked.time.toString() + " UTC +02:00").getTime() - 60000;
-                        let end_time = new Date(date + ", 2019 " + start_time_checked.time.toString() + " UTC +02:00").getTime() - 40000;
+                        let end_time = new Date(date + ", 2019 " + start_time_checked.time.toString() + " UTC +02:00").getTime() - 30000;
                         // there are 86 400 000 milisconds in a day. As we first substracted a 24 hours we need to add a day.
                         if (start_time_checked.bool) {
                             start_time = +86400000,
@@ -134,7 +134,6 @@ async function run(date, line) {
                                 if (stop) {
                                     if (!stop.sum) stop.sum = 0;
                                     if (!stop.pow) stop.pow = 0;
-                                    if (!(new Date(EWT[j].estimated_arrival).getTime() - new Date(EWT[i].estimated_arrival).getTime())) console.log("NULL FOUUND \t " + EWT[j].estimated_arrival + "\t" + EWT[i].estimated_arrival)
                                     stop.sum += (new Date(EWT[j].estimated_arrival).getTime() - new Date(EWT[i].estimated_arrival).getTime());
                                     stop.pow += (Math.pow((new Date(EWT[j].estimated_arrival).getTime() - new Date(EWT[i].estimated_arrival).getTime()), 2));
                                 }
