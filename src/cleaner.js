@@ -7,7 +7,7 @@ const mongo = require("./utils/mongo");
 module.exports = () => {
     return new Promise(async (resolve, reject) => {
         try {
-         //   await remove_GTFS_files();
+            await remove_GTFS_files();
             await delete_old_database_objects();
             resolve();
         } catch (error) {

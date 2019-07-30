@@ -1,13 +1,29 @@
-import React, { PureComponent } from 'react'
+import React from 'react'
 import Chart from '../../components/chart'
 import Text from '../../components/text'
 
-export class Home extends PureComponent {
+export class Home extends React.Component{
+    constructor(props){
+        super(props);
+        this.handleLineClick = this.handleLineClick.bind(this);
+        this.state = {
+            selectedLine: null,
+        }
+    }
+    handleLineClick(line, e){
+        console.log("I was clicked  " + line);
+        this.setState({selectedLine: line});
+
+    }
     render() {
         let style = {
             marginTop: "5%",
 
         }
+        const lines = ["39", "95"];
+        let _lines = lines.map((line) => 
+             <div className={line} key={line} onClick={(e) => this.handleLineClick(line, e)}>{line} </div>
+        )
         return (
             <div>
                     <nav className="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow">
@@ -23,7 +39,10 @@ export class Home extends PureComponent {
                     <p className="lead">This project tries to measure the Excess Waiting Time for line 39 of the MIVB</p>
                     </div>
                     </div>
-                    <Chart />
+                    <Chart selectedLine={this.state.selectedLine}/>
+                    <div style={{ display: "flex", justifyContent: "center" }}>
+                        {_lines}         
+                     </div>
                     <Text />
                 </div>
                 </div>

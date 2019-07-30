@@ -42,13 +42,13 @@ async function run(date, line) {
         fs.readFile(path.join(__dirname, `/../tmp/files/${line}.json`), async (err, data) => {
             try {
                 if (err) reject(err)
-                let day = new Date(date + ", 2019" + " UTC +02:00").getDay();
+                let day = new Date(Date.now() - 86400000).getDay();
                 //If the file was not read it makes no sense to continue
                 let line_timetable = JSON.parse(data);
                 let EWT = [];
                 let promises = [];
                 line_timetable.forEach(trip => {
-                    trip.timetable.forEach((stop, index) => {
+                    trip.timetable.forEach(stop => {
 
                         let start_time_checked = split_hour_if_necessary(stop.arrival_time);
                         let start_time = new Date(date + ", 2019 " + start_time_checked.time.toString() + " UTC +02:00").getTime() - 60000;
@@ -58,8 +58,10 @@ async function run(date, line) {
                             start_time = +86400000,
                                 end_time = +86400000
                         }
+                        console.log('i ran', day, date)
                         //Make sure that the correct schedules are used. Only the schedule of sunday for sundays
                         if (trip.days.includes(day)) {
+                            console.log('Passed days')
                             //The promise never rejects. That's not good coding practice but we can't risk it. Otherwise promise.all may fail
                             promises.push(new Promise(async (_resolve, _reject) => {
                                 let db = mongo.use();
@@ -71,16 +73,19 @@ async function run(date, line) {
                                 });
                                 try {
                                     while (await cursor.hasNext()) {
-                                        const doc = await cursor.next();
+                                       let doc = await cursor.next();
                                         if (doc.points) {
                                             doc.points.forEach(point => {
                                                 if (point.pointId == stop.stop_id) {
                                                     for (let i = 0; i < point.passingTimes.length; i++) {
+                                                    
                                                         if (point.passingTimes[i].lineId == line) {
                                                             //We need to check the destination!
+                                                            console.log("found one")
                                                             if (trip.direction == point.passingTimes[i].destination.fr) {
                                                                 EWT.push({
                                                                     stop_id: stop.stop_id,
+                                                                    stop_name: stop.stop_name,
                                                                     trip_id: trip.trip_id,
                                                                     stop_sequence: stop.stop_sequence,
                                                                     arrival_time: new Date(date + ", 2019 " + stop.arrival_time + " UTC +02:00").toString(),
@@ -119,8 +124,8 @@ async function run(date, line) {
                             return -1
                         }
                     });
-                    let results_file = JSON.parse(await fsPromises.readFile(path.join(__dirname, `/../files/${line}.json`), "utf-8"));
-
+                    let results_file = JSON.parse(await fsPromises.readFile(path.join(__dirname, `/../files/${line}_${new Date(Date.now() - 86400000).getMonth()}_${new Date(Date.now() - 86400000).getDate()}.json`), "utf-8"));
+                    console.log(EWT.length);
                     //Add the date;
                     results_file.date = date;
 
@@ -144,13 +149,18 @@ async function run(date, line) {
                     let total_AWT = 0;
                     for (let i = 0; i < results_file.stops.length; i++) {
                         results_file.stops[i].AWT = ((results_file.stops[i].pow / (2 * results_file.stops[i].sum) / 60000));
-                        total_AWT += ((results_file.stops[i].pow / (2 * results_file.stops[i].sum) / 60000));
-                        delete results_file.stops[i].pow;
-                        delete results_file.stops[i].sum;
+                        results_file.stops[i].EWT = (results_file.stops[i].AWT - results_file.stops[i].SWT);
+                        if(results_file.stops[i].AWT)total_AWT += ((results_file.stops[i].pow / (2 * results_file.stops[i].sum) / 60000));
+                        if(!results_file.stops[i].AWT)delete results_file.stops[i]
+                        if(results_file.stops[i]){
+                            delete results_file.stops[i].pow;
+                            delete results_file.stops[i].sum;
+                        }
+                        
                     }
                     results_file.AWT = (total_AWT / results_file.stops.length);
                     try {
-                        await fsPromises.writeFile(path.join(__dirname, `/../files/${line}.json`), JSON.stringify(results_file));
+                        await fsPromises.writeFile(path.join(__dirname, `/../files/${line}_${new Date(Date.now() - 86400000).getMonth()}_${new Date(Date.now() - 86400000).getDate()}.json`), JSON.stringify(results_file));
                     } catch (error) {
                         console.log(error);
                     }

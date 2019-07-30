@@ -9,9 +9,7 @@ services:
       - mongo
     environment:
       NODE_ENV: development
-    ports:
-      - 3000:3000
-    command: npm run scraper
+   # command: npm run scraper
   node_calculator:
     image: node
     volumes:
@@ -19,7 +17,7 @@ services:
     working_dir: /app
     depends_on:
       - mongo
-   # command: npm run calculator
+    command: npm run calculator
   mongo:
     image: mongo
     restart: always
@@ -39,8 +37,6 @@ services:
     container_name: nodejs
     restart: unless-stopped
     working_dir: /app
-    logging:
-      driver: none
     environment: 
       NODE_ENV: production
     networks:

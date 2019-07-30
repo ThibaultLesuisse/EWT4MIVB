@@ -3,9 +3,7 @@ const fsPromises = require('fs').promises;
 const path = require('path');
 const StreamZip = require('node-stream-zip');
 const https = require('https');
-const readline = require('readline');
-const array = require("./utils/array");
-const BigNumber = require('bignumber.js');
+
 
 //This needs to happen as soon as possible. This could be redundant though.
 require('dotenv').config({
@@ -113,6 +111,8 @@ function parse_gtfs(lines) {
             let parsed_trips_file = parse_gtfsfile(trips_file);
 
             let stop_times_file = await fsPromises.readFile(path.join(__dirname, '/../tmp/gtfs/stop_times.txt'), 'utf8');
+            let stop_names = parse_gtfsfile(await fsPromises.readFile(path.join(__dirname, "/../tmp/gtfs/stops.txt"), "utf-8"));
+
             let parsed_stop_times = parse_gtfsfile(stop_times_file);
 
 
@@ -128,15 +128,7 @@ function parse_gtfs(lines) {
                                 if (check_date(parsed_calendar[index])) {
                                     let stoptimes = [];
                                     for (let k = 0; k < parsed_stop_times.length; k++) {
-                                        if (parsed_stop_times[k][0] == parsed_trips_file[i][2]) {
-                                            if (parsed_stop_times[k][3] == "0089") {
-                                                parsed_stop_times[k][3] = "89"
-                                            }
-                                            //Cleaning up the mess made by MIVB. In the GTFS files they have stop ID that end with F and G but not in their real-time data. So we need to get
-                                            //rid of the F and the G which occur frequently...
-                                            if (parsed_stop_times[k][3].length > 4) {
-                                                parsed_stop_times[k][3] = parsed_stop_times[k][3].slice(0, 4);
-                                            }
+                                        if (parsed_stop_times[k][0] == parsed_trips_file[i][2] && parsed_stop_times[k][3] != "1042") {
                                             stoptimes.push({
                                                 "arrival_time": parsed_stop_times[k][1],
                                                 "departure_time": parsed_stop_times[k][2],
@@ -159,6 +151,29 @@ function parse_gtfs(lines) {
                         }
                     }
                 }
+                for (let i = 0; i < trips.length; i++) {
+                    for (let j = 0; j < trips[i].timetable.length; j++) {
+                        for (let k = 0; k < stop_names.length; k++) {
+                            if (stop_names[k][0] == trips[i].timetable[j].stop_id) {
+                                trips[i].timetable[j].stop_name = stop_names[k][2].slice(1, stop_names[k][2].length - 1);
+                                
+                                if (trips[i].timetable[j].stop_id == "0089") {
+                                    trips[i].timetable[j].stop_id = "89"
+                                }
+                                //Cleaning up the mess made by MIVB. In the GTFS files they have stop ID that end with F and G but not in their real-time data. So we need to get
+                                //rid of the F and the G which occur frequently...
+                                if (trips[i].timetable[j].stop_id.length > 4) {
+                                    trips[i].timetable[j].stop_id = trips[i].timetable[j].stop_id.slice(0, 4);
+                                }
+                                break;
+                            }
+
+                          
+
+                        }
+                    }
+                }
+
                 //We have to await for it to end otherwise trips will be changed!
                 await estimate_ewt(trips, line_ids[j].line_id);
                 await fsPromises.writeFile(path.join(__dirname, `/../tmp/files/${line_ids[j].line_id}.json`), JSON.stringify(trips));
@@ -177,46 +192,50 @@ function parse_gtfs(lines) {
  *  Weirdness. If you want an example check the lasts trips on a line on a sunday. 
  */
 function estimate_ewt(stoptimes, line) {
-    return new Promise((resolve, reject) => {
-            //This needs to be sorted... otherwise it is useless
-            stoptimes.sort((a, b) => {
-                let checked_time_a = split_hour_if_necessary(a.timetable[0].arrival_time);
-                let checked_time_b = split_hour_if_necessary(b.timetable[0].arrival_time);
+    return new Promise(async (resolve, reject) => {
+        //This needs to be sorted... otherwise it is useless
+        stoptimes.sort((a, b) => {
+            let checked_time_a = split_hour_if_necessary(a.timetable[0].arrival_time);
+            let checked_time_b = split_hour_if_necessary(b.timetable[0].arrival_time);
 
-                let time_a = new Date(checked_time_a.time + " May 2, 2019").getTime();
-                let time_b = new Date(checked_time_b.time + " May 2, 2019").getTime();
+            let time_a = new Date(checked_time_a.time + " May 2, 2019").getTime();
+            let time_b = new Date(checked_time_b.time + " May 2, 2019").getTime();
 
 
-                if(checked_time_a.bool)time_a = new Date(checked_time_a.time + " May 3, 2019").getTime();
-                if(checked_time_b.bool)time_b = new Date(checked_time_b.time + " May 3, 2019").getTime();
+            if (checked_time_a.bool) time_a = new Date(checked_time_a.time + " May 3, 2019").getTime();
+            if (checked_time_b.bool) time_b = new Date(checked_time_b.time + " May 3, 2019").getTime();
 
-                
-                // using May 2 is not going to influence the results as it just need a full date in order to recognize it as a date. It sorts based on hour so the day doens't matter
-                if (time_a > time_b) {
-                    return 1
-                } else {
-                    return -1
-                }
-            });
-            // We need to calculate the time bewteen two trams. We need to be sure that are headed in the same direction and starting from the same point
-            // and working on the same days. As the array is sorted this should be the closest match but it's dangerous to assume that....
-            let day = new Date(Date.now() - 86400000).getDay();
-            let results = {
-                line: line,
-                date: null,
-                SWT: 0,
-                stops: []
+
+            // using May 2 is not going to influence the results as it just need a full date in order to recognize it as a date. It sorts based on hour so the day doens't matter
+            if (time_a > time_b) {
+                return 1
+            } else {
+                return -1
             }
-            let found = false;
+        });
 
-            for (let i = 0; i < stoptimes.length; i++) {
-                if (stoptimes[i].days.includes(day)) {
-                    for (let j = 0; j < stoptimes[i].timetable.length; j++) {
-                        for (let k = i + 1; k < stoptimes.length; k++) {
-                            if (!found && stoptimes[k].days.includes(day)) {
-                                for (let l = 0; l < stoptimes[k].timetable.length; l++) {
-                                    if (stoptimes[i].timetable[j].arrival_time != stoptimes[k].timetable[l].arrival_time &&
-                                        stoptimes[i].timetable[j].stop_id == stoptimes[k].timetable[l].stop_id) {
+
+
+        // We need to calculate the time bewteen two trams. We need to be sure that are headed in the same direction and starting from the same point
+        // and working on the same days. As the array is sorted this should be the closest match but it's dangerous to assume that....
+        let day = new Date(Date.now() - 86400000).getDay();
+        let results = {
+            line: line,
+            date: null,
+            SWT: 0,
+            stops: []
+        }
+        let found = false;
+
+        for (let i = 0; i < stoptimes.length; i++) {
+            if (stoptimes[i].days.includes(day)) {
+                for (let j = 0; j < stoptimes[i].timetable.length; j++) {
+                    for (let k = i + 1; k < stoptimes.length; k++) {
+                        if (!found && stoptimes[k].days.includes(day)) {
+                            for (let l = 0; l < stoptimes[k].timetable.length; l++) {
+                                if (stoptimes[i].timetable[j].arrival_time != stoptimes[k].timetable[l].arrival_time &&
+                                    stoptimes[i].timetable[j].stop_name == stoptimes[k].timetable[l].stop_name &&
+                                    stoptimes[i].direction_id == stoptimes[k].direction_id) {
                                     let stop = results.stops.find(stop => stop.stop_id == stoptimes[k].timetable[l].stop_id)
                                     if (stop) {
                                         let checked_time_b = split_hour_if_necessary(stoptimes[k].timetable[l].arrival_time);
@@ -224,8 +243,8 @@ function estimate_ewt(stoptimes, line) {
                                         let time_a = new Date(checked_time_a.time + " May 2, 2019").getTime();
                                         let time_b = new Date(checked_time_b.time + " May 2, 2019").getTime();
 
-                                        if(checked_time_a.bool)time_a = new Date(checked_time_a.time + " May 3, 2019").getTime();
-                                        if(checked_time_b.bool)time_b = new Date(checked_time_b.time + " May 3, 2019").getTime();
+                                        if (checked_time_a.bool) time_a = new Date(checked_time_a.time + " May 3, 2019").getTime();
+                                        if (checked_time_b.bool) time_b = new Date(checked_time_b.time + " May 3, 2019").getTime();
 
                                         stop.sum += time_b - time_a;
                                         stop.pow += Math.pow((time_b - time_a), 2);
@@ -259,7 +278,7 @@ function estimate_ewt(stoptimes, line) {
         }
         results.SWT = (total_SWT / results.stops.length);
 
-        fs.writeFile(path.join(__dirname, `/../files/${line}.json`), JSON.stringify(results), (err) => {
+        fs.writeFile(path.join(__dirname, `/../files/${line}_${new Date(Date.now() - 86400000).getMonth()}_${new Date(Date.now() - 86400000).getDate()}.json`), JSON.stringify(results), (err) => {
             if (err) console.log("[gtfs_parser.js:226] Error writing file\n" + err.stack);
             resolve();
         })

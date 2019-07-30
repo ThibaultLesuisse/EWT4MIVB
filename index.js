@@ -1,10 +1,11 @@
 const express = require("express");
 const path = require('path');
 const app = express();
-const cors = require('cors')
+const cors = require('cors');
 const fs = require('fs');
 
 app.use(cors())
+app.options('*', cors());
 
 app.use(express.static(path.join(__dirname, 'front/build')));
 
@@ -24,9 +25,10 @@ app.get("/delay", (req, res) =>  {
     })
 })
 
-app.get("/ewt", (req, res) => {
-    fs.readFile('./files/result/39_ewt.json', 'utf-8', (err, ewt_data) => {
-        res.send(JSON.parse(ewt_data));
+app.get("/ewt/:line", (req, res) => {
+    console.log(req.params.line);
+    fs.readFile(`./files/${req.params.line}.json`, 'utf-8', (err, ewt_data) => {
+        res.json(JSON.parse(ewt_data));
     })
 })
 

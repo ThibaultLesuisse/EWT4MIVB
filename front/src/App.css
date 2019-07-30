@@ -1,6 +1,41 @@
+@font-face {
+  font-family: Brusseline;
+  src:  url("http://www.stib-mivb.be/irj/go/km/docs/WEBSITE_RES/Webresources/Frontend/build/fonts/brusseline-webfont.ttf") format("woff");
+  font-style: normal;
+  font-weight: 400;
+}
 body {
   background-color: #ecf0f1;
 }
 .jumbotron {
   background-color: transparent;
+}
+[class="39"] {
+  color: white;
+  height: 125px;
+  width: 125px;
+  background: #b12916;
+  font-family:Brusseline,Arial,Helvetica,sans-serif; 
+  font-size: 5em;
+  transform: scale(.95);
+  text-align: center;
+  border-radius: 10px;
+}
+[class="39"]:hover {
+  cursor: pointer;
+}
+[class="95"] {
+  margin-left: 5%;
+  color: white;
+  height: 125px;
+  width: 125px;
+  background: #36578c;
+  font-family:Brusseline,Arial,Helvetica,sans-serif; 
+  font-size: 5em;
+  transform: scale(.95);
+  text-align: center;
+  border-radius: 10px;
+}
+[class="95"]:hover {
+  cursor: pointer;
 }
