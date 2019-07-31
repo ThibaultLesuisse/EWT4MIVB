@@ -16,24 +16,30 @@ class Chart extends React.Component {
       buttons: [], 
       lineData: null,
       startDate: new Date(Date.now()-86400000),
-      dateChanged: false
+      dateChanged: true,
+      endDate: new Date(Date.now()-86400000)
     };
+    
     this.compare_data.bind(this)
     this.fetchData = this.fetchData.bind(this);
     this.handleLineButtonClick = this.handleLineButtonClick.bind(this);
     this.handleDateChange = this.handleDateChange.bind(this)
+    this.handleEndDateChange = this.handleEndDateChange.bind(this)
+    this.fetchData();
+  }
+  handleEndDateChange(date){
+    this.setState({
+      endDate: date,
+      dateChanged:true
+    })
+    this.fetchData();
   }
   handleDateChange(date){
-    console.log(date);
     this.setState({
       startDate: date,
       dateChanged: true,
     });
     this.fetchData();
-  }
-  shouldComponentUpdate(){
-    //this.fetchData();
-    return true;
   }
   compare_data(a, b) {
     if (parseInt(a.stop_sequence) > parseInt(b.stop_sequence)) {
@@ -45,7 +51,6 @@ class Chart extends React.Component {
   handleLineButtonClick(e, direction){
     let data = this.state.lineData.find(line => line.direction == direction);
     let stops, SWT, AWT, EWT;
-    console.log(data);
     data.stops.sort(this.compare_data);
     if(!this.state.direction){
      stops  = data.stops.map(stop => stop.stop_name);
@@ -123,17 +128,23 @@ class Chart extends React.Component {
   }
   //localhost
   async fetchData() {
-    if(this.state.loadedLine !== this.props.selectedLine || this.state.dateChanged){
+    console.log(this.props.selectedLine);
+    if(this.props.selectedLine !== this.state.loadedLine || this.state.dateChanged){
       try {
         let swt_response;
-        
         if(!this.props.selectedLine){
             swt_response = await fetch('http://localhost/ewt');
         }else{
-          swt_response = await fetch(`http://localhost/ewt/${this.props.selectedLine}/${new Date(this.state.startDate).getTime()}`);
+          if(new Date(this.state.startDate).getDate() === new Date(this.state.endDate).getDate()){
+            swt_response = await fetch(`http://localhost/ewt/${this.props.selectedLine}/${new Date(this.state.startDate).getTime()}`);
+          }
+          else {
+            swt_response = await fetch(`http://localhost/ewt/${this.props.selectedLine}/${new Date(this.state.startDate).getTime()}/${new Date(this.state.endDate).getTime()}`); 
+          }
         }
         
         let line_overview = await swt_response.json();
+        console.log(line_overview);
         let directions = [];
         line_overview.stops.forEach(stop => {
           let direction = directions.find(direction => direction.direction === stop.direction)
@@ -227,12 +238,11 @@ class Chart extends React.Component {
               pointHitRadius: 10,
               data: EWT
             }
-          ]}, chart_ready: true, loadedLine: line_overview.line, lineData: directions, dateChanged: false})
-     
+          ]}, chart_ready: true, loadedLine: line_overview.line, lineData: directions, dateChanged: false});
       } catch (error) {
         console.error(error);
       }
-    }
+    }   
     
   }
 
@@ -245,7 +255,6 @@ class Chart extends React.Component {
         buttons.push(<button type="button" key={index} onClick={e => this.handleLineButtonClick(e, button)} className="btn btn-info">{button}</button>)
       });
     }
-    console.log(this.state.buttons);
     if(this.state.chart_ready) {chart = <div width = {500} ><Line data = {this.state.chartData} width = {400} height = {400} options = { {maintainAspectRatio: false }}/>
   </div >}
   else {
@@ -255,11 +264,20 @@ class Chart extends React.Component {
   }    return (
     <div>
       <div style={{display: "flex", justifyContent:"center", marginTop:"2%"}}>  
-        <DatePicker
+        Start Date: <DatePicker
           selected={this.state.startDate}
           minDate={new Date("29 July, 2019 UTC +02:00")}
           maxDate={new Date(Date.now() - 86400000)}
           onChange={this.handleDateChange}
+        />
+        End Date: <DatePicker
+            selected={this.state.endDate}
+            selectsEnd
+            startDate={this.state.startDate}
+            endDate={this.state.endDate}
+            onChange={this.handleEndDateChange}
+            minDate={this.state.startDate}
+            maxDate={new Date(Date.now() - 86400000)}
         />
       </div>
       
