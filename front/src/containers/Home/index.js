@@ -39,10 +39,11 @@ export class Home extends React.Component{
                     <p className="lead">This project tries to measure the Excess Waiting Time for line 39 of the MIVB</p>
                     </div>
                     </div>
-                    <Chart selectedLine={this.state.selectedLine}/>
                     <div style={{ display: "flex", justifyContent: "center" }}>
                         {_lines}         
                      </div>
+                    <Chart selectedLine={this.state.selectedLine}/>
+                   
                     <Text />
                 </div>
                 </div>

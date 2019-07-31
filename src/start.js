@@ -6,7 +6,7 @@ const cron = require('node-cron');
 const mongo = require('./utils/mongo');
 
 //Start every day at 12:00
-cron.schedule("2 9 * * *", async () => {
+cron.schedule("28 14 * * *", async () => {
     try {
         await mongo.connect();
         await file_structure();

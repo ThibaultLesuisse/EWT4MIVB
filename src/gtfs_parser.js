@@ -128,7 +128,7 @@ function parse_gtfs(lines) {
                                 if (check_date(parsed_calendar[index])) {
                                     let stoptimes = [];
                                     for (let k = 0; k < parsed_stop_times.length; k++) {
-                                        if (parsed_stop_times[k][0] == parsed_trips_file[i][2] && parsed_stop_times[k][3] != "1042") {
+                                        if (parsed_stop_times[k][0] == parsed_trips_file[i][2] && parsed_stop_times[k][3] != "1042" && parsed_stop_times[k][3] != "5531" && parsed_stop_times[k][3] != "5520" && parsed_stop_times[k][3] != "5272" && parsed_stop_times[k][3] != "8162" ) {
                                             stoptimes.push({
                                                 "arrival_time": parsed_stop_times[k][1],
                                                 "departure_time": parsed_stop_times[k][2],
@@ -234,9 +234,9 @@ function estimate_ewt(stoptimes, line) {
                         if (!found && stoptimes[k].days.includes(day)) {
                             for (let l = 0; l < stoptimes[k].timetable.length; l++) {
                                 if (stoptimes[i].timetable[j].arrival_time != stoptimes[k].timetable[l].arrival_time &&
-                                    stoptimes[i].timetable[j].stop_name == stoptimes[k].timetable[l].stop_name &&
+                                    stoptimes[i].timetable[j].stop_id == stoptimes[k].timetable[l].stop_id &&
                                     stoptimes[i].direction_id == stoptimes[k].direction_id) {
-                                    let stop = results.stops.find(stop => stop.stop_name == stoptimes[k].timetable[l].stop_name)
+                                    let stop = results.stops.find(stop => stop.stop_id == stoptimes[k].timetable[l].stop_id)
                                     if (stop) {
                                         let checked_time_b = split_hour_if_necessary(stoptimes[k].timetable[l].arrival_time);
                                         let checked_time_a = split_hour_if_necessary(stoptimes[i].timetable[j].arrival_time);
@@ -252,7 +252,9 @@ function estimate_ewt(stoptimes, line) {
                                       if(stoptimes[k].timetable[l].stop_id && stoptimes[k].timetable[l].stop_name){
                                         results.stops.push({
                                             stop_id: stoptimes[k].timetable[l].stop_id,
+                                            direction: stoptimes[k].direction,
                                             stop_name: stoptimes[k].timetable[l].stop_name,
+                                            stop_sequence: stoptimes[k].timetable[l].stop_sequence,
                                             sum: 0,
                                             pow: 0,
                                         })

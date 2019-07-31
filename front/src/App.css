@@ -9,7 +9,11 @@ body {
 }
 .jumbotron {
   background-color: transparent;
+  margin-bottom: 0rem;
+  padding-bottom: 1.5rem;
 }
+
+
 [class="39"] {
   color: white;
   height: 125px;
