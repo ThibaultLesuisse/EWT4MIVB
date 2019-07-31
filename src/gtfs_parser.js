@@ -236,7 +236,7 @@ function estimate_ewt(stoptimes, line) {
                                 if (stoptimes[i].timetable[j].arrival_time != stoptimes[k].timetable[l].arrival_time &&
                                     stoptimes[i].timetable[j].stop_name == stoptimes[k].timetable[l].stop_name &&
                                     stoptimes[i].direction_id == stoptimes[k].direction_id) {
-                                    let stop = results.stops.find(stop => stop.stop_id == stoptimes[k].timetable[l].stop_id)
+                                    let stop = results.stops.find(stop => stop.stop_name == stoptimes[k].timetable[l].stop_name)
                                     if (stop) {
                                         let checked_time_b = split_hour_if_necessary(stoptimes[k].timetable[l].arrival_time);
                                         let checked_time_a = split_hour_if_necessary(stoptimes[i].timetable[j].arrival_time);
@@ -249,8 +249,10 @@ function estimate_ewt(stoptimes, line) {
                                         stop.sum += time_b - time_a;
                                         stop.pow += Math.pow((time_b - time_a), 2);
                                     } else {
+                                        console.log(stoptimes[k].timetable[l].stop_id);
                                         results.stops.push({
                                             stop_id: stoptimes[k].timetable[l].stop_id,
+                                            stop_name: stoptimes[k].timetable[l].stop_name,
                                             sum: 0,
                                             pow: 0,
                                         })

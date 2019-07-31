@@ -58,10 +58,8 @@ async function run(date, line) {
                             start_time = +86400000,
                                 end_time = +86400000
                         }
-                        console.log('i ran', day, date)
                         //Make sure that the correct schedules are used. Only the schedule of sunday for sundays
                         if (trip.days.includes(day)) {
-                            console.log('Passed days')
                             //The promise never rejects. That's not good coding practice but we can't risk it. Otherwise promise.all may fail
                             promises.push(new Promise(async (_resolve, _reject) => {
                                 let db = mongo.use();
@@ -73,15 +71,14 @@ async function run(date, line) {
                                 });
                                 try {
                                     while (await cursor.hasNext()) {
-                                       let doc = await cursor.next();
+                                        let doc = await cursor.next();
                                         if (doc.points) {
                                             doc.points.forEach(point => {
                                                 if (point.pointId == stop.stop_id) {
                                                     for (let i = 0; i < point.passingTimes.length; i++) {
-                                                    
+
                                                         if (point.passingTimes[i].lineId == line) {
                                                             //We need to check the destination!
-                                                            console.log("found one")
                                                             if (trip.direction == point.passingTimes[i].destination.fr) {
                                                                 EWT.push({
                                                                     stop_id: stop.stop_id,
@@ -150,13 +147,12 @@ async function run(date, line) {
                     for (let i = 0; i < results_file.stops.length; i++) {
                         results_file.stops[i].AWT = ((results_file.stops[i].pow / (2 * results_file.stops[i].sum) / 60000));
                         results_file.stops[i].EWT = (results_file.stops[i].AWT - results_file.stops[i].SWT);
-                        if(results_file.stops[i].AWT)total_AWT += ((results_file.stops[i].pow / (2 * results_file.stops[i].sum) / 60000));
-                        if(!results_file.stops[i].AWT)delete results_file.stops[i]
-                        if(results_file.stops[i]){
+                        if (results_file.stops[i].AWT) total_AWT += ((results_file.stops[i].pow / (2 * results_file.stops[i].sum) / 60000));
+                        if (!results_file.stops[i].AWT) delete results_file.stops[i]
+                        if (results_file.stops[i]) {
                             delete results_file.stops[i].pow;
                             delete results_file.stops[i].sum;
                         }
-                        
                     }
                     results_file.AWT = (total_AWT / results_file.stops.length);
                     try {
@@ -164,18 +160,30 @@ async function run(date, line) {
                     } catch (error) {
                         console.log(error);
                     }
+                    let dailey_delay = EWT.reduce((a, b) => a + b.delay, 0);
 
-                    //Now the results have to be measured. The actual results are saved in delay.json
-                    fs.writeFile(path.join(__dirname, `/../files/${line}_${date.replace(' ', '_')}.json`), JSON.stringify(EWT), (err) => {
-                        if (err) reject(err);
-                        console.log("(4/6) Writing file complete");
-                        let dailey_delay = EWT.reduce((a, b) => a + b.delay, 0);
+                    //This contains the average delay
+                    if (!fs.existsSync(path.join(__dirname, '/../files/result/delay.json'))) {
+                        let result = [];
+                        let delay = new BigNumber(dailey_delay);
 
-                        //This contains the average delay
-                        if (!fs.existsSync(path.join(__dirname, '/../files/result/delay.json'))) {
-                            let result = [];
+                        result.push({
+                            date: date,
+                            delay: delay.dividedBy(EWT.length).dividedBy(1000).dividedBy(60).toFixed(2),
+                            line: line
+                        });
+                        fs.writeFile(path.join(__dirname, '/../files/result/delay.json'), JSON.stringify(result), err => {
+                            if (err) reject(err);
+                            //Closing the connections isn't advised but otherwise the topology will break
+                            //client.close()
+                            resolve();
+
+                        })
+                    } else {
+                        fs.readFile(path.join(__dirname, '/../files/result/delay.json'), 'UTF-8', (err, data) => {
+                            if (err) reject(err);
+                            let result = JSON.parse(data);
                             let delay = new BigNumber(dailey_delay);
-
                             result.push({
                                 date: date,
                                 delay: delay.dividedBy(EWT.length).dividedBy(1000).dividedBy(60).toFixed(2),
@@ -183,30 +191,13 @@ async function run(date, line) {
                             });
                             fs.writeFile(path.join(__dirname, '/../files/result/delay.json'), JSON.stringify(result), err => {
                                 if (err) reject(err);
-                                //Closing the connections isn't advised but otherwise the topology will break
                                 //client.close()
                                 resolve();
+                            });
+                        })
+                    }
 
-                            })
-                        } else {
-                            fs.readFile(path.join(__dirname, '/../files/result/delay.json'), 'UTF-8', (err, data) => {
-                                if (err) reject(err);
-                                let result = JSON.parse(data);
-                                let delay = new BigNumber(dailey_delay);
-                                result.push({
-                                    date: date,
-                                    delay: delay.dividedBy(EWT.length).dividedBy(1000).dividedBy(60).toFixed(2),
-                                    line: line
-                                });
-                                fs.writeFile(path.join(__dirname, '/../files/result/delay.json'), JSON.stringify(result), err => {
-                                    if (err) reject(err);
-                                    //client.close()
-                                    resolve();
-                                });
-                            })
-                        }
 
-                    });
                 }).catch(error => {
                     console.error("one of the promises failed, Reason below: \n " + error.stack);
                 })

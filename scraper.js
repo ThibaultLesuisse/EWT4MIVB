@@ -34,6 +34,7 @@ async function collectData() {
             let token;
             if(index == 0)token = process.env.MIVB_API_KEY_0
             if(index == 1)token = process.env.MIVB_API_KEY_1
+            if(index == 2)token = process.env.MIVB_API_KEY_2
             let options = {
                 headers: {
                     Accept: 'application/json',
