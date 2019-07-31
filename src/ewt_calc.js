@@ -148,7 +148,7 @@ async function run(date, line) {
                         results_file.stops[i].AWT = ((results_file.stops[i].pow / (2 * results_file.stops[i].sum) / 60000));
                         results_file.stops[i].EWT = (results_file.stops[i].AWT - results_file.stops[i].SWT);
                         if (results_file.stops[i].AWT) total_AWT += ((results_file.stops[i].pow / (2 * results_file.stops[i].sum) / 60000));
-                        if (!results_file.stops[i].AWT) delete results_file.stops[i]
+                       // if (!results_file.stops[i].AWT) delete results_file.stops[i]
                         if (results_file.stops[i]) {
                             delete results_file.stops[i].pow;
                             delete results_file.stops[i].sum;

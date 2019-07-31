@@ -28,7 +28,7 @@ class Chart extends React.Component {
         swt_response = await fetch('http://localhost/ewt/'+ this.props.selectedLine);
       }
       let line_overview = await swt_response.json();
-      let stops = line_overview.stops.map(stop => stop.stop_id);
+      let stops = line_overview.stops.map(stop => stop.stop_name);
       let SWT = line_overview.stops.map(stop => stop.SWT);
       let AWT = line_overview.stops.map(stop => stop.AWT);
       let EWT = line_overview.stops.map(stop => stop.EWT);

@@ -27,7 +27,7 @@ app.get("/delay", (req, res) =>  {
 
 app.get("/ewt/:line", (req, res) => {
     console.log(req.params.line);
-    fs.readFile(`./files/${req.params.line}.json`, 'utf-8', (err, ewt_data) => {
+    fs.readFile(`./files/${req.params.line}_${new Date(Date.now() - 86400000).getMonth()}_${new Date(Date.now() - 86400000).getDate()}.json`, 'utf-8', (err, ewt_data) => {
         res.json(JSON.parse(ewt_data));
     })
 })

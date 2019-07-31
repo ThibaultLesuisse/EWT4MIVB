@@ -20,7 +20,7 @@ export class Home extends React.Component{
             marginTop: "5%",
 
         }
-        const lines = ["39", "95"];
+        const lines = ["39", "95", "1"];
         let _lines = lines.map((line) => 
              <div className={line} key={line} onClick={(e) => this.handleLineClick(line, e)}>{line} </div>
         )

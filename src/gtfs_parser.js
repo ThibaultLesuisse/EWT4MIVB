@@ -249,13 +249,14 @@ function estimate_ewt(stoptimes, line) {
                                         stop.sum += time_b - time_a;
                                         stop.pow += Math.pow((time_b - time_a), 2);
                                     } else {
-                                        console.log(stoptimes[k].timetable[l].stop_id);
+                                      if(stoptimes[k].timetable[l].stop_id && stoptimes[k].timetable[l].stop_name){
                                         results.stops.push({
                                             stop_id: stoptimes[k].timetable[l].stop_id,
                                             stop_name: stoptimes[k].timetable[l].stop_name,
                                             sum: 0,
                                             pow: 0,
                                         })
+                                      } 
                                     }
                                     found = true;
                                     break;
