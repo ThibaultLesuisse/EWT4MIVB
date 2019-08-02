@@ -28,24 +28,25 @@ class Chart extends React.Component {
     this.fetchData();
   }
   handleEndDateChange(date){
+    this.fetchData();
     this.setState({
       endDate: date,
       dateChanged:true
     })
-    this.fetchData();
-  }
+      }
   handleDateChange(date){
+    this.fetchData();
     this.setState({
       startDate: date,
       dateChanged: true,
     });
-    this.fetchData();
+    
   }
   compare_data(a, b) {
     if (parseInt(a.stop_sequence) > parseInt(b.stop_sequence)) {
-      return -1
-    } else {
       return 1
+    } else {
+      return -1
     }
   }
   handleLineButtonClick(e, direction){

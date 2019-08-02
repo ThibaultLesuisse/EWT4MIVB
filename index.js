@@ -45,7 +45,6 @@ app.get("/ewt/:line/:start_date/:end_date", async (req, res) => {
     let amount = 0
     let promises = [];
     while (start_date.getTime() <= end_date.getTime()) {
-        console.log("in loop")
         try {
             promises.push(new Promise(async (resolve, reject) => {
                 let file
@@ -61,7 +60,6 @@ app.get("/ewt/:line/:start_date/:end_date", async (req, res) => {
                     let parsed_file = JSON.parse(file);
                     
                     parsed_file.stops.forEach(stop => {
-                        console.log(stop);
                         let _stop = results.stops.find(a => a.stop_id == stop.stop_id);
                         _stop.SWT += stop.SWT,
                             _stop.EWT += stop.EWT,
@@ -83,8 +81,9 @@ app.get("/ewt/:line/:start_date/:end_date", async (req, res) => {
             stop.AWT = (stop.AWT / amount);
             stop.EWT = (stop.EWT / amount);
         })
-        console.log(JSON.stringify(results));
         res.json(results);
+    }).catch(err => {
+        console.error(err);
     })
  
 })

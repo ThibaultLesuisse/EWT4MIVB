@@ -4,6 +4,16 @@ const path = require('path');
 const StreamZip = require('node-stream-zip');
 const https = require('https');
 
+//Some stops can cause problems and need to be excluded! 5520G and 5520G are a good example of this. In the real-time data they are the same but in the GTFS files they aren't
+const excluded_stops = ["5272F",
+    "4318",
+    "1042",
+    "5531",
+    "5520F",
+    "5520G",
+    "8162"
+]
+
 
 //This needs to happen as soon as possible. This could be redundant though.
 require('dotenv').config({
@@ -71,9 +81,8 @@ function unzip() {
 }
 // This checks if a date lies bewteen the start and end date
 function check_date(calendar) {
-    //-1 on the month because the month is the monthIndex!!!
-    let start_date = new Date(calendar[8].substring(0, 4), calendar[8].substring(4, 6) - 1, calendar[8].substring(6, 8));
-    let end_date = new Date(calendar[9].substring(0, 4), calendar[9].substring(4, 6) - 1, calendar[9].substring(6, 8));
+    let start_date = new Date(String(parseInt(calendar[8].substring(4, 6))) + " " + String(calendar[8].substring(6, 8))+ " " + String(calendar[8].substring(0, 4)) + " 00:00:0" + " GMT +02:00" );
+    let end_date = new Date(String(parseInt(calendar[9].substring(4, 6))) + " " + String(calendar[9].substring(6, 8))+ " " + String(calendar[9].substring(0, 4)) + " 23:59:59" + " GMT +02:00" );
     let yesterday = new Date(Date.now() - 86400000);
     if (yesterday.getTime() >= start_date.getTime() && yesterday.getTime() <= end_date.getTime()) {
         return true
@@ -105,30 +114,33 @@ async function get_line_id(lines) {
 function parse_gtfs(lines) {
     return new Promise(async (resolve, reject) => {
         try {
+            //All lines are loaded into memory
             let parsed_calendar = parse_gtfsfile(await fsPromises.readFile(path.join(__dirname, '/../tmp/gtfs/calendar.txt'), 'utf8'));
-
             let trips_file = await fsPromises.readFile(path.join(__dirname, "/../tmp/gtfs/trips.txt"), "utf-8");
             let parsed_trips_file = parse_gtfsfile(trips_file);
-
             let stop_times_file = await fsPromises.readFile(path.join(__dirname, '/../tmp/gtfs/stop_times.txt'), 'utf8');
             let stop_names = parse_gtfsfile(await fsPromises.readFile(path.join(__dirname, "/../tmp/gtfs/stops.txt"), "utf-8"));
-
             let parsed_stop_times = parse_gtfsfile(stop_times_file);
-
-
-
             let line_ids = await get_line_id(lines);
             let trips = [];
+
+            // Here we loop over the lines
             for (let j = 0; j < line_ids.length; j++) {
+                //The different trips
                 for (let i = 0; i < parsed_trips_file.length; i++) {
+                    //We look for all the trips of a certain line 
                     if (line_ids[j].route_id == parsed_trips_file[i][0]) {
+                        //We need to check if a certain trips is working "yesterday"
                         for (let index = 0; index < parsed_calendar.length; index++) {
                             if (parsed_calendar[index][0] === parsed_trips_file[i][1]) {
                                 let _days = days(parsed_calendar[index].slice(1, 8));
+                                //If it does work "yesterday" we can continue
                                 if (check_date(parsed_calendar[index])) {
                                     let stoptimes = [];
+                                    //Here we loop over the biggest file of the bunch and we loop for all the stops of 1 trip and add them together
                                     for (let k = 0; k < parsed_stop_times.length; k++) {
-                                        if (parsed_stop_times[k][0] == parsed_trips_file[i][2] && parsed_stop_times[k][3] != "1042" && parsed_stop_times[k][3] != "5531" && parsed_stop_times[k][3] != "5520" && parsed_stop_times[k][3] != "5272" && parsed_stop_times[k][3] != "8162" ) {
+                                        //looking for the right trip and making sure it is not part of the excluded ones
+                                        if (parsed_stop_times[k][0] == parsed_trips_file[i][2] && excluded_stops.includes(parsed_stop_times[k][3]) == false) {
                                             stoptimes.push({
                                                 "arrival_time": parsed_stop_times[k][1],
                                                 "departure_time": parsed_stop_times[k][2],
@@ -146,6 +158,7 @@ function parse_gtfs(lines) {
                                         direction_id: parsed_trips_file[i][4],
                                         timetable: stoptimes
                                     });
+
                                 }
                             }
                         }
@@ -156,7 +169,7 @@ function parse_gtfs(lines) {
                         for (let k = 0; k < stop_names.length; k++) {
                             if (stop_names[k][0] == trips[i].timetable[j].stop_id) {
                                 trips[i].timetable[j].stop_name = stop_names[k][2].slice(1, stop_names[k][2].length - 1);
-                                
+
                                 if (trips[i].timetable[j].stop_id == "0089") {
                                     trips[i].timetable[j].stop_id = "89"
                                 }
@@ -168,7 +181,7 @@ function parse_gtfs(lines) {
                                 break;
                             }
 
-                          
+
 
                         }
                     }
@@ -249,16 +262,16 @@ function estimate_ewt(stoptimes, line) {
                                         stop.sum += time_b - time_a;
                                         stop.pow += Math.pow((time_b - time_a), 2);
                                     } else {
-                                      if(stoptimes[k].timetable[l].stop_id && stoptimes[k].timetable[l].stop_name){
-                                        results.stops.push({
-                                            stop_id: stoptimes[k].timetable[l].stop_id,
-                                            direction: stoptimes[k].direction,
-                                            stop_name: stoptimes[k].timetable[l].stop_name,
-                                            stop_sequence: stoptimes[k].timetable[l].stop_sequence,
-                                            sum: 0,
-                                            pow: 0,
-                                        })
-                                      } 
+                                        if (stoptimes[k].timetable[l].stop_id && stoptimes[k].timetable[l].stop_name) {
+                                            results.stops.push({
+                                                stop_id: stoptimes[k].timetable[l].stop_id,
+                                                direction: stoptimes[k].direction,
+                                                stop_name: stoptimes[k].timetable[l].stop_name,
+                                                stop_sequence: stoptimes[k].timetable[l].stop_sequence,
+                                                sum: 0,
+                                                pow: 0,
+                                            })
+                                        }
                                     }
                                     found = true;
                                     break;
