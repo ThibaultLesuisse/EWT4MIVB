@@ -258,18 +258,23 @@ class Chart extends React.Component {
   </div >}
   else {
     chart =  <div width = {500} style={{textAlign:"center"}}>
-          Chart is Loading or no line is selected
+          No line is currently selected, click on one of the icons above
       </div >
   }    return (
     <div>
-      <div style={{display: "flex", justifyContent:"center", marginTop:"2%"}}>  
-        Start Date: <DatePicker
+      <form className="form-inline" style={{justifyContent: "center"}}>
+      <div style={{display: "flex", justifyContent:"center", marginTop:"2%"}} className="form-group mb-2">  
+      <label for="startdate">Start Date:</label> <DatePicker
           selected={this.state.startDate}
-          minDate={new Date("29 July, 2019 UTC +02:00")}
+          minDate={new Date("31 July, 2019 UTC +02:00")}
           maxDate={new Date(Date.now() - 86400000)}
           onChange={this.handleDateChange}
+          id="startdate"
+          className="form-control"
         />
-        End Date: <DatePicker
+        </div>
+        <div style={{display: "flex", justifyContent:"center", marginTop:"2%", marginLeft:"2%"}} className="form-group mb-2"> 
+        <label for="enddate">End Date:</label> <DatePicker
             selected={this.state.endDate}
             selectsEnd
             startDate={this.state.startDate}
@@ -277,8 +282,11 @@ class Chart extends React.Component {
             onChange={this.handleEndDateChange}
             minDate={this.state.startDate}
             maxDate={new Date(Date.now() - 86400000)}
+            id="enddate"
+            className="form-control"
         />
       </div>
+      </form>
       
           <div style={{textAlign:"center", margin:"2%", fontSize: "1.4em"}}>First pick a line by clicking on an icon above then pick a direction from below</div>
           

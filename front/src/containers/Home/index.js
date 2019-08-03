@@ -27,7 +27,7 @@ export class Home extends React.Component{
         return (
             <div>
                     <nav className="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow">
-                        <a className="navbar-brand col-sm-3 col-md-2 mr-0" href="#">EWT For the MIVB</a>
+                        <a className="navbar-brand col-sm-3 col-md-2 mr-0" href="#">Excess waiting time for the MIVB</a>
                     </nav>
                 <div className="container" style={style}>
                 <div className="card">
@@ -36,7 +36,7 @@ export class Home extends React.Component{
                     <div className="row justify-content-center">
                     <h1 className="display-4">EWT for the MIVB-STIB</h1>
                     
-                    <p className="lead">This project tries to measure the Excess Waiting Time for line 39 of the MIVB</p>
+                    <p className="lead">This project tries to measure the Excess Waiting Time for lines: 1 (metro), 39 (tram) and 95 (bus) of the MIVB</p>
                     </div>
                     </div>
                     <div style={{ display: "flex", justifyContent: "center" }}>
