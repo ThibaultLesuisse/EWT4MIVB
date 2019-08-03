@@ -127,25 +127,23 @@ class Chart extends React.Component {
       ]}})
 
   }
-  //localhost
+
   async fetchData() {
     console.log(this.props.selectedLine);
     if(this.props.selectedLine !== this.state.loadedLine || this.state.dateChanged){
       try {
         let swt_response;
         if(!this.props.selectedLine){
-            swt_response = await fetch('http://localhost/ewt');
         }else{
           if(new Date(this.state.startDate).getDate() === new Date(this.state.endDate).getDate()){
-            swt_response = await fetch(`http://localhost/ewt/${this.props.selectedLine}/${new Date(this.state.startDate).getTime()}`);
+            swt_response = await fetch(`http://174.138.107.45/ewt/${this.props.selectedLine}/${new Date(this.state.startDate).getTime()}`);
           }
           else {
-            swt_response = await fetch(`http://localhost/ewt/${this.props.selectedLine}/${new Date(this.state.startDate).getTime()}/${new Date(this.state.endDate).getTime()}`); 
+            swt_response = await fetch(`http://174.138.107.45/ewt/${this.props.selectedLine}/${new Date(this.state.startDate).getTime()}/${new Date(this.state.endDate).getTime()}`); 
           }
         }
         
         let line_overview = await swt_response.json();
-        console.log(line_overview);
         let directions = [];
         line_overview.stops.forEach(stop => {
           let direction = directions.find(direction => direction.direction === stop.direction)

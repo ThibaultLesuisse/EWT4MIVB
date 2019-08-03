@@ -9,7 +9,7 @@ services:
       - mongo
     environment:
       NODE_ENV: development
-   # command: npm run scraper
+    command: npm run scraper
   node_calculator:
     image: node
     volumes:

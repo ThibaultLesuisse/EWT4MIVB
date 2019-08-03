@@ -11,7 +11,6 @@ const excluded_stops = ["5272F",
     "5531",
     "5520F",
     "5520G",
-    "8162"
 ]
 
 
@@ -158,7 +157,7 @@ function parse_gtfs(lines) {
                                         direction_id: parsed_trips_file[i][4],
                                         timetable: stoptimes
                                     });
-
+                                    
                                 }
                             }
                         }

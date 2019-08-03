@@ -39,7 +39,8 @@ app.get("/ewt/:line/:date", async (req, res) => {
 
 app.get("/ewt/:line/:start_date/:end_date", async (req, res) => {
     let start_date = new Date(parseInt(req.params.start_date))
-    let end_date = new Date(parseInt(req.params.end_date))
+    let end_date = new Date(parseInt(req.params.end_date));
+    
 
     let results = {}
     let amount = 0
@@ -49,7 +50,7 @@ app.get("/ewt/:line/:start_date/:end_date", async (req, res) => {
             promises.push(new Promise(async (resolve, reject) => {
                 let file
                 try {   
-                file = await fs.readFile(`./files/${req.params.line}_${start_date.getMonth()}_${end_date.getDate()}.json`, 'utf-8');
+                file = await fs.readFile(`./files/${req.params.line}_${end_date.getMonth()}_${end_date.getDate()}.json`, 'utf-8');
                 } catch (error) {
                     console.log(error);
                     throw(error)
@@ -61,9 +62,15 @@ app.get("/ewt/:line/:start_date/:end_date", async (req, res) => {
                     
                     parsed_file.stops.forEach(stop => {
                         let _stop = results.stops.find(a => a.stop_id == stop.stop_id);
-                        _stop.SWT += stop.SWT,
-                            _stop.EWT += stop.EWT,
-                            _stop.AWT += stop.AWT
+                            if( _stop &&_stop.SWT && _stop.EWT && _stop.AWT){
+                                _stop.SWT += stop.SWT,
+                                _stop.EWT += stop.EWT,
+                                _stop.AWT += stop.AWT
+                            }
+                            else {
+                                amount --
+                            }
+                            
                     });
                 } 
                 amount++
