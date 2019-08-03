@@ -6,6 +6,7 @@ const https = require('https');
 
 //Some stops can cause problems and need to be excluded! 5520G and 5520G are a good example of this. In the real-time data they are the same but in the GTFS files they aren't
 const excluded_stops = ["5272F",
+    "8162",
     "4318",
     "1042",
     "5531",
