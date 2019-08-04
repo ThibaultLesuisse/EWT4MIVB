@@ -28,7 +28,6 @@ app.get("/delay", (req, res) => {
 app.get("/ewt/:line/:date", async (req, res) => {
         try {
             let ewt_data =await fs.readFile(`./files/${req.params.line}_${new Date(parseInt(req.params.date)).getMonth()}_${new Date(parseInt(req.params.date)).getDate()}.json`, 'utf-8');
-            console.log("in simple")
             res.json(JSON.parse(ewt_data));
         } catch (error) {
             console.log(error);
