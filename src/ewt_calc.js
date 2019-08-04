@@ -101,7 +101,6 @@ async function run(date, line) {
                                     }
                                 } catch (error) {
                                     console.error("[ewt_calc.js:102]Database error\n" + error.stack)
-                                    _reject(error)
                                 } finally {
                                     _resolve();
                                 }
@@ -200,6 +199,7 @@ async function run(date, line) {
 
                 }).catch(error => {
                     console.error("one of the promises failed, Reason below: \n " + error.stack);
+                    throw error;
                 })
 
             } catch (error) {
