@@ -134,8 +134,9 @@ function parse_gtfs(lines) {
                         for (let index = 0; index < parsed_calendar.length; index++) {
                             if (parsed_calendar[index][0] === parsed_trips_file[i][1]) {
                                 let _days = days(parsed_calendar[index].slice(1, 8));
-                                //If it does work "yesterday" we can continue
-                                if (check_date(parsed_calendar[index])) {
+                                let day = new Date(Date.now() - 86400000).getDay();
+                                //If it does work "yesterday" we can continue and we also check that only trips that ride on e.g. monday are added
+                                if (check_date(parsed_calendar[index]) && _days.includes(day)) {
                                     let stoptimes = [];
                                     //Here we loop over the biggest file of the bunch and we loop for all the stops of 1 trip and add them together
                                     for (let k = 0; k < parsed_stop_times.length; k++) {

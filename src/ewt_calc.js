@@ -156,56 +156,21 @@ async function run(date, line) {
                     results_file.AWT = (total_AWT / results_file.stops.length);
                     try {
                         await fsPromises.writeFile(path.join(__dirname, `/../files/${line}_${new Date(Date.now() - 86400000).getMonth()}_${new Date(Date.now() - 86400000).getDate()}.json`), JSON.stringify(results_file));
+                        resolve();
                     } catch (error) {
                         console.log(error);
+                        throw error
                     }
-                    let dailey_delay = EWT.reduce((a, b) => a + b.delay, 0);
-
-                    //This contains the average delay
-                    if (!fs.existsSync(path.join(__dirname, '/../files/result/delay.json'))) {
-                        let result = [];
-                        let delay = new BigNumber(dailey_delay);
-
-                        result.push({
-                            date: date,
-                            delay: delay.dividedBy(EWT.length).dividedBy(1000).dividedBy(60).toFixed(2),
-                            line: line
-                        });
-                        fs.writeFile(path.join(__dirname, '/../files/result/delay.json'), JSON.stringify(result), err => {
-                            if (err) reject(err);
-                            //Closing the connections isn't advised but otherwise the topology will break
-                            //client.close()
-                            resolve();
-
-                        })
-                    } else {
-                        fs.readFile(path.join(__dirname, '/../files/result/delay.json'), 'UTF-8', (err, data) => {
-                            if (err) reject(err);
-                            let result = JSON.parse(data);
-                            let delay = new BigNumber(dailey_delay);
-                            result.push({
-                                date: date,
-                                delay: delay.dividedBy(EWT.length).dividedBy(1000).dividedBy(60).toFixed(2),
-                                line: line
-                            });
-                            fs.writeFile(path.join(__dirname, '/../files/result/delay.json'), JSON.stringify(result), err => {
-                                if (err) reject(err);
-                                //client.close()
-                                resolve();
-                            });
-                        })
-                    }
-
-
                 }).catch(error => {
                     console.error("one of the promises failed, Reason below: \n " + error.stack);
                     throw error;
                 })
 
             } catch (error) {
+                console.error(error);
                 reject(error);
                 //client.close()
-                console.error(error);
+               
             }
 
         })
