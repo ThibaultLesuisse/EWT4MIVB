@@ -106,12 +106,9 @@ async function collectData() {
 }
 
 function fetchData(url, options, timestamp) {
-    console.log(url);
     return new Promise((resolve, reject) => {
         https.get(url, options, (res) => {
-            console.log(url);
             let position = "";
-
             res.on('data', (d) => {
                 position += d;
             });
