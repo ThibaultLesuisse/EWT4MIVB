@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {
     "@wojtekmaj/react-daterange-picker": "^2.4.0",
-    "chart.js": "^2.8.0",
+    "chart.js": "^2.9.4",
     "react": "^16.8.4",
     "react-chartjs-2": "^2.7.6",
     "react-datepicker": "^2.8.0",
